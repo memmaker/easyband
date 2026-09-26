@@ -332,3 +332,44 @@ recorded in `web/toolchain.sh` is still valid.
   `p_ptr->is_dead` as plain globals; sources `SRC/`, list from
   `SRC/Makefile.std`), `emcc` via `. ../emsdk/emsdk_env.sh` as in
   `web/toolchain.sh`.
+
+### Stage 5 (web page): done 2026-09-26 (cloud)
+- **Windows** (`rvip/web/rvip-wm.js`, `web/index.html` `#t-<id>`, `TERMS`
+  in `web/easyband.js` = `WEB_TERMS` 7 in `SRC/main-web.c`): 0 Map,
+  1 Inventory `PW_INVEN`, 2 Messages `PW_MESSAGE`, 3 Monsters `PW_M_LIST`,
+  4 Recall `PW_MONSTER|PW_OBJECT`, 5 Equipment `PW_EQUIP`, 6 Character
+  `PW_PLAYER_0`; all have `window_flag_desc[]` entries (`tables.c`), so
+  `load2.c`'s mask keeps them. Set by `web_init_windows()` (after
+  `init_angband()`, before the savefile, which brings its own flags).
+  Default on: Map, Inventory, Monsters, Messages; Recall, Equipment,
+  Character via Windows ▾.
+- **Layout file** `/easyband/web/web-layout.json` (IDBFS; wm tree incl.
+  which windows are on, zoom, titles, Tiles, audio).
+- **Game end**: `quit()` → `quit_aux` = `hook_quit` (set in `init_web()`)
+  → `js_quit(msg, p_ptr->is_dead)`; `plog_aux` = `hook_plog`. Ctrl-X →
+  "Play again" overlay → reload restores. Death: tombstone/`-more-`/
+  "Do you really..." wait for keys in C, then the page syncs and reloads;
+  the dead save starts a new birth.
+- **Help**: `build.sh` writes a stub `help.html` (stage 6 replaces it).
+- **`web/deploy.sh`**: guard line (commit + push first), target
+  `ruzzoli.de/roguelikes/easyband/`. **Not run: the cloud has no ssh key
+  for ruzzoli.de and no network route there** → Mac side runs
+  `sh web/deploy.sh` after `sh web/build.sh`.
+- Tested (Playwright `web/tests/stage5.js`, all PASS): new character →
+  pack in Inventory, Village idiot/Farmer Maggot in Monsters, empty
+  equipment slots in Equipment (Easyband's kit starts in the pack),
+  character sheet in Character; Equipment + Character on → Ctrl-X →
+  overlay → reload → same windows, character restored; debug `^A y n Great
+  Hell Wyrm` → attack it → death → page reloads → birth "Choose a sex"; no
+  console errors (only 404s: favicon). Screens `web/shots/stage5-*.png`.
+- Open problems: Messages window shows upstream `fix_message`'s `====` rule
+  under few messages; with 6 windows at 1280x800 the tile map is small
+  (no big-tile mode, stage 4); the top-bar hint text is cut at 1280 px.
+
+### Next: stage 6 (docs + sound)
+- Sound: upstream `lib/xtra/sound/sound.cfg` + 20 own wavs (in the
+  preload? no: build copies only edit/file/help/user). Port
+  `rvip/templates/zangband/web/sounds.py` (events from
+  `angband_sound_name[]` in `SRC/tables.c`/`variable.c`), fill from
+  `rvip/templates/dubtrain`; hook `TERM_XTRA_SOUND` → `js_sound` exists.
+- Help: `web/make-help.py` from the template, `PAGE='easyband.html'`.

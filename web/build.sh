@@ -30,5 +30,7 @@ cp web/index.html rvip/web/rvip-wm.js web/easyband.js "$OUT/"
 # from rvip/templates/tactical-angband); mapping lib/user/graf-shb.prf
 # (python3 web/mkgraf-shb.py), drawn nearest-neighbour at cell size
 cp web/tiles.webp "$OUT/"
+# Help: stub until stage 6 writes the guide (web/make-help.py)
+echo '<p>The game guide comes with the next build. Press ? in the game for its own help.</p>' > "$OUT/help.html"
 rm -rf web/stage
 ls -la "$OUT"
