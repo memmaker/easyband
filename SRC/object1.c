@@ -20,7 +20,7 @@
 #define MAX_METALS     34       /* Used with wands/rods (min 29/28) */
 #define MAX_COLORS     60       /* Used with potions (min 60) */
 #define MAX_SHROOM     20       /* Used with mushrooms (min 20) */
-#define MAX_TITLES     50       /* Used with scrolls (min 48) */
+#define MAX_TITLES     53       /* Used with scrolls (Easyband: sval up to 52) */
 #define MAX_SYLLABLES 158       /* Used with scrolls (see below) */
 
 
@@ -312,7 +312,7 @@ static bool object_flavor(int k_idx)
 
 		case TV_FOOD:
 		{
-			if (k_ptr->sval < SV_FOOD_MIN_FOOD)
+			if (k_ptr->sval < MAX_SHROOM)	/* Easyband: sval 20 (Fortune cookie) is plain food */
 			{
 				return (0xF0 + food_col[k_ptr->sval]);
 			}
@@ -1295,7 +1295,7 @@ void object_desc(char *buf, object_type *o_ptr, int pref, int mode)
 
 
 			/* Ordinary food is "boring" */
-			if (o_ptr->sval >= SV_FOOD_MIN_FOOD) break;
+			if (o_ptr->sval >= MAX_SHROOM) break;	/* Easyband: Fortune cookie (20) */
 
 			/* Color the object */
 			modstr = food_adj[o_ptr->sval];

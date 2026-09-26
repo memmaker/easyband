@@ -1128,8 +1128,8 @@ static void do_cmd_macro_aux(char *buf)
 	/* Read the pattern */
 	while (ch != '\0')
 	{
-		/* Save the key */
-		buf[n++] = ch;
+		/* Save the key (a key burst must not overflow buf or tmp) */
+		if (n < 255) buf[n++] = ch;
 
 		/* Do not process macros */
 		inkey_base = TRUE;
