@@ -343,7 +343,7 @@ static void prt_depth(void)
 	}
 
 	/* Right-Adjust the "depth", and clear old values */
-	prt(format("%7s", depths), 23, COL_DEPTH);
+	prt(format("%7s", depths), ROW_DEPTH, COL_DEPTH);
 }
 
 
@@ -1076,7 +1076,7 @@ static void fix_player_1(void)
  */
 static void fix_message(void)
 {
-	int j, i;
+	int j, i, k;
 	int w, h;
 	int x, y;
 
@@ -1097,13 +1097,23 @@ static void fix_message(void)
 		/* Get size */
 		Term_get_size(&w, &h);
 
-		/* Dump messages */
-		for (i = 0; i < h; i++)
+		/* Dump messages, repeats folded to "message (xN)" */
+		for (i = 0, k = 0; i < h; i++)
 		{
-			byte color = message_color((s16b)i);
+			byte color;
+			char buf[1024];
+			int n = 1;
+
+			while ((k + n < message_num()) && (message_str((s16b)k)[0] > ' ') &&
+			       streq(message_str((s16b)k), message_str((s16b)(k + n)))) n++;
+
+			color = message_color((s16b)k);
+			if (n > 1) strnfmt(buf, sizeof(buf), "%s (x%d)", message_str((s16b)k), n);
+			else strnfmt(buf, sizeof(buf), "%s", message_str((s16b)k));
+			k += n;
 
 			/* Dump the message on the appropriate line */
-			Term_putstr(0, (h - 1) - i, -1, color, message_str((s16b)i));
+			Term_putstr(0, (h - 1) - i, -1, color, buf);
 
 			/* Cursor */
 			Term_locate(&x, &y);

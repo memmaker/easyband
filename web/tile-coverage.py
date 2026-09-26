@@ -11,7 +11,7 @@ L = 'lib'
 if sys.argv[1:] == ['new']:
     pref, sheet, S = 'graf-new.prf', f'{L}/xtra/graf/16x16.bmp', 16
 else:
-    pref, sheet, S = 'graf-shb.prf', 'rvip/templates/tactical-angband/tiles.webp', 64
+    pref, sheet, S = 'graf-shb.prf', 'web/tiles.webp', 64
 img = Image.open(sheet).convert('RGBA')
 W, H = img.size
 def tile_ok(a, c):

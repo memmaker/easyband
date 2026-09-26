@@ -2906,8 +2906,10 @@ void play_game(bool new_game)
 		quit("main window is too small");
 	}
 
-	/* Forbid resizing */
+	/* Forbid resizing (the web page resizes the main term: web_set_view()) */
+#ifndef USE_WEB
 	Term->fixed_shape = TRUE;
+#endif
 
 
 	/* Hack -- Turn off the cursor */

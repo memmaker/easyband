@@ -75,26 +75,46 @@
  * Number of grids in each panel (vertically)
  * Must be a multiple of BLOCK_HGT
  */
-#define PANEL_HGT	11
+#define PANEL_HGT	(SCREEN_HGT / 2)
 
 /*
  * Number of grids in each panel (horizontally)
  * Must be a multiple of BLOCK_WID
  */
-#define PANEL_WID	33
+#define PANEL_WID	(SCREEN_WID / 2)
 
 
 /*
  * Number of grids in each screen (vertically)
  * Must be a multiple of PANEL_HGT (at least 2x)
  */
-#define SCREEN_HGT	22
+#define SCREEN_HGT_STD	22
 
 /*
  * Number of grids in each screen (horizontally)
  * Must be a multiple of PANEL_WID (at least 2x)
  */
-#define SCREEN_WID	66
+#define SCREEN_WID_STD	66
+
+/*
+ * The map view (grids shown).  Native: the fixed 66x22 screen.  Web: follows
+ * the main term's size (web_set_view() in main-web.c); MAP_STEP 2 = one tile
+ * over two text cells (big tiles).  Gameplay areas (town layout, detection)
+ * keep the fixed size (SCREEN_*_STD, DETECT_Y1/X1).
+ */
+#ifdef USE_WEB
+# define SCREEN_HGT	web_view_hgt
+# define SCREEN_WID	web_view_wid
+# define MAP_STEP	web_map_step
+#else
+# define SCREEN_HGT	SCREEN_HGT_STD
+# define SCREEN_WID	SCREEN_WID_STD
+# define MAP_STEP	1
+#endif
+
+/* Detection area: a fixed-size screen centred on the view */
+#define DETECT_Y1	(p_ptr->wy + (SCREEN_HGT - SCREEN_HGT_STD) / 2)
+#define DETECT_X1	(p_ptr->wx + (SCREEN_WID - SCREEN_WID_STD) / 2)
 
 
 /*
@@ -464,31 +484,31 @@
 #define ROW_STUN		22
 #define COL_STUN		0	/* <stun> */
 
-#define ROW_HUNGRY		23
+#define ROW_HUNGRY		(ROW_MAP + SCREEN_HGT)
 #define COL_HUNGRY		0	/* "Weak" / "Hungry" / "Full" / "Gorged" */
 
-#define ROW_BLIND		23
+#define ROW_BLIND		(ROW_MAP + SCREEN_HGT)
 #define COL_BLIND		7	/* "Blind" */
 
-#define ROW_CONFUSED	23
+#define ROW_CONFUSED	(ROW_MAP + SCREEN_HGT)
 #define COL_CONFUSED	13	/* "Confused" */
 
-#define ROW_AFRAID		23
+#define ROW_AFRAID		(ROW_MAP + SCREEN_HGT)
 #define COL_AFRAID		22	/* "Afraid" */
 
-#define ROW_POISONED	23
+#define ROW_POISONED	(ROW_MAP + SCREEN_HGT)
 #define COL_POISONED	29	/* "Poisoned" */
 
-#define ROW_STATE		23
+#define ROW_STATE		(ROW_MAP + SCREEN_HGT)
 #define COL_STATE		38	/* <state> */
 
-#define ROW_SPEED		23
+#define ROW_SPEED		(ROW_MAP + SCREEN_HGT)
 #define COL_SPEED		49	/* "Slow (-NN)" or "Fast (+NN)" */
 
-#define ROW_STUDY		23
+#define ROW_STUDY		(ROW_MAP + SCREEN_HGT)
 #define COL_STUDY		64	/* "Study" */
 
-#define ROW_DEPTH		23
+#define ROW_DEPTH		(ROW_MAP + SCREEN_HGT)
 #define COL_DEPTH		70	/* "Lev NNN" / "NNNN ft" */
 
 #define ROW_MAP			1

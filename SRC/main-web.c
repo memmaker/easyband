@@ -33,6 +33,7 @@ static int web_want_save = 0;
 static double web_last_yield = 0;
 
 static void web_switch_graphics(int on);
+static void web_set_view(void);
 
 
 /* ---- JavaScript side (implemented in web/easyband.js) ---- */
@@ -160,7 +161,7 @@ static bool web_at_cmd(void)
  */
 static void web_apply_layout(void)
 {
-	int i;
+	int i, main_resized = 0;
 	term *old = Term;
 
 	for (i = 0; i < WEB_TERMS; i++)
@@ -191,6 +192,7 @@ static void web_apply_layout(void)
 		else
 		{
 			Term_resize(cols, rows);
+			if (!i) web_set_view(), main_resized = 1;
 			Term_redraw();
 		}
 
@@ -199,6 +201,9 @@ static void web_apply_layout(void)
 	}
 
 	Term_activate(old);
+
+	/* New map view size: the game redraws the whole screen (command prompt) */
+	if (main_resized && character_generated) do_cmd_redraw();
 }
 
 
@@ -340,12 +345,31 @@ static errr Term_pict_web(int x, int y, int n, const byte *ap, const char *cp,
 }
 
 
+/*
+ * The map view (SCREEN_HGT/WID in defines.h) fills the main term: below the
+ * message row, above the status row, right of the sidebar.  With tiles each
+ * grid takes two text cells (big tiles), so the sidebar keeps normal text.
+ */
+int web_view_hgt = SCREEN_HGT_STD, web_view_wid = SCREEN_WID_STD, web_map_step = 1;
+
+static void web_set_view(void)
+{
+	term *t = &web_term[0];
+
+	web_map_step = (use_graphics != GRAPHICS_NONE) ? 2 : 1;
+	web_view_hgt = MIN(DUNGEON_HGT, t->hgt - ROW_MAP - 1);
+	web_view_wid = MIN(DUNGEON_WID, (t->wid - COL_MAP) / web_map_step);
+
+	if (character_generated) verify_panel();
+}
+
 /* Shockbolt tiles (lib/user/graf-shb.prf), or text */
 static void web_graphics(int on)
 {
 	use_graphics = arg_graphics = on ? GRAPHICS_SHOCKBOLT : GRAPHICS_NONE;
 	use_transparency = on;
 	ANGBAND_GRAF = "shb";
+	if (web_term[0].hgt) web_set_view();
 }
 
 /* The page's Tiles button, applied at the command prompt */
@@ -443,6 +467,7 @@ errr init_web(int argc, char **argv)
 	}
 
 	Term_activate(&web_term[0]);
+	web_set_view();
 
 	web_last_yield = emscripten_get_now();
 

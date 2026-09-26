@@ -1062,10 +1062,12 @@ bool detect_traps(void)
 
 
 	/* Scan the current panel */
-	for (y = p_ptr->wy; y < p_ptr->wy+SCREEN_HGT; y++)
+	for (y = DETECT_Y1; y < DETECT_Y1 + SCREEN_HGT_STD; y++)
 	{
-		for (x = p_ptr->wx; x < p_ptr->wx+SCREEN_WID; x++)
+		for (x = DETECT_X1; x < DETECT_X1 + SCREEN_WID_STD; x++)
 		{
+			if (!in_bounds(y, x)) continue;
+
 			/* Detect invisible traps */
 			if (cave_feat[y][x] == FEAT_INVIS)
 			{
@@ -1112,10 +1114,12 @@ bool detect_doors(void)
 
 
 	/* Scan the panel */
-	for (y = p_ptr->wy; y < p_ptr->wy+SCREEN_HGT; y++)
+	for (y = DETECT_Y1; y < DETECT_Y1 + SCREEN_HGT_STD; y++)
 	{
-		for (x = p_ptr->wx; x < p_ptr->wx+SCREEN_WID; x++)
+		for (x = DETECT_X1; x < DETECT_X1 + SCREEN_WID_STD; x++)
 		{
+			if (!in_bounds(y, x)) continue;
+
 			/* Detect secret doors */
 			if (cave_feat[y][x] == FEAT_SECRET)
 			{
@@ -1163,10 +1167,12 @@ bool detect_stairs(void)
 
 
 	/* Scan the panel */
-	for (y = p_ptr->wy; y < p_ptr->wy+SCREEN_HGT; y++)
+	for (y = DETECT_Y1; y < DETECT_Y1 + SCREEN_HGT_STD; y++)
 	{
-		for (x = p_ptr->wx; x < p_ptr->wx+SCREEN_WID; x++)
+		for (x = DETECT_X1; x < DETECT_X1 + SCREEN_WID_STD; x++)
 		{
+			if (!in_bounds(y, x)) continue;
+
 			/* Detect stairs */
 			if ((cave_feat[y][x] == FEAT_LESS) ||
 			    (cave_feat[y][x] == FEAT_MORE))
@@ -1205,10 +1211,12 @@ bool detect_treasure(void)
 
 
 	/* Scan the current panel */
-	for (y = p_ptr->wy; y < p_ptr->wy+SCREEN_HGT; y++)
+	for (y = DETECT_Y1; y < DETECT_Y1 + SCREEN_HGT_STD; y++)
 	{
-		for (x = p_ptr->wx; x < p_ptr->wx+SCREEN_WID; x++)
+		for (x = DETECT_X1; x < DETECT_X1 + SCREEN_WID_STD; x++)
 		{
+			if (!in_bounds(y, x)) continue;
+
 			/* Notice embedded gold */
 			if ((cave_feat[y][x] == FEAT_MAGMA_H) ||
 			    (cave_feat[y][x] == FEAT_QUARTZ_H))

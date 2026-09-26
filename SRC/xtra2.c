@@ -2318,12 +2318,12 @@ bool mon_take_hit(int m_idx, int dam, bool *fear, cptr note)
 bool modify_panel(int wy, int wx)
 {
 	/* Verify wy, adjust if needed */
-	if (p_ptr->depth == 0) wy = SCREEN_HGT;
+	if ((p_ptr->depth == 0) && (SCREEN_HGT >= SCREEN_HGT_STD)) wy = SCREEN_HGT_STD - (SCREEN_HGT - SCREEN_HGT_STD) / 2;
 	else if (wy > DUNGEON_HGT - SCREEN_HGT) wy = DUNGEON_HGT - SCREEN_HGT;
 	else if (wy < 0) wy = 0;
 
 	/* Verify wx, adjust if needed */
-	if (p_ptr->depth == 0) wx = SCREEN_WID;
+	if ((p_ptr->depth == 0) && (SCREEN_WID >= SCREEN_WID_STD)) wx = SCREEN_WID_STD - (SCREEN_WID - SCREEN_WID_STD) / 2;
 	else if (wx > DUNGEON_WID - SCREEN_WID) wx = DUNGEON_WID - SCREEN_WID;
 	else if (wx < 0) wx = 0;
 

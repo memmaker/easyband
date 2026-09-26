@@ -2,13 +2,13 @@
 """Write the web build's sound.cfg and copy the used .wavs.
 Easyband's own samples (lib/xtra/sound, from upstream) come first; events
 its sound.cfg leaves empty or names a missing file for are filled from the
-Dubtrain Angband Sound Pack v3.1.0 (rvip/templates/dubtrain, same event
+Dubtrain Angband Sound Pack v3.1.0 (~/Downloads, as Zangband; same event
 names). 'walk' stays silent (every step).
 Usage: sounds.py <sound.cfg to write> <wav dir>"""
 import os, shutil, sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 OWN = os.path.join(ROOT, 'lib/xtra/sound')
-PACK = os.path.join(ROOT, 'rvip/templates/dubtrain')
+PACK = os.path.expanduser('~/Downloads/Dubtrain Angband Sound Pack v3.1.0')
 # Easyband event -> Dubtrain event, when the names differ
 MAP = {'zap': 'zap_rod', 'stairs': 'stairs_down', 'walk': ''}
 EVENTS = open(os.path.join(ROOT, 'SRC/variable.c'), encoding='latin-1').read()

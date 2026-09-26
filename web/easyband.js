@@ -15,7 +15,7 @@
 		{ id: 'main', title: '' },
 		{ id: 'inv', title: 'Inventory' },
 		{ id: 'msg', title: 'Messages' },
-		{ id: 'mon', title: 'Monsters' },
+		{ id: 'mon', title: 'Visible' },
 		{ id: 'rec', title: 'Recall' },
 		{ id: 'eqp', title: 'Equipment' },
 		{ id: 'chr', title: 'Character' }
@@ -94,8 +94,8 @@
 		var fit = Math.min((W - sideW - GUT - BORDER) / 40, (H - botH - GUT - BORDER) / 24);
 		var tile = TILE_STEPS[0];
 		TILE_STEPS.forEach(function (t) { if (t <= fit) tile = t; });
-		/* Tiles: 80 square cells across the map window */
-		var gfit = Math.min((W - sideW - GUT - BORDER) / 80, (H - botH - GUT - BORDER) / 24);
+		/* Tiles: same cells as text (a tile is two cells wide) */
+		var gfit = fit;
 		var gtile = GTILE_STEPS[0];
 		GTILE_STEPS.forEach(function (t) { if (t <= gfit) gtile = t; });
 		var f = {};
@@ -173,7 +173,7 @@
 		var s = defaultLayout().split;
 		wm = RvipWM({
 			area: $('game'), menu: $('btn-layout'),
-			wins: [{ id: 'main', title: 'Map' }, { id: 'inv', title: 'Inventory' }, { id: 'msg', title: 'Messages' }, { id: 'mon', title: 'Monsters' }, { id: 'rec', title: 'Recall' }, { id: 'eqp', title: 'Equipment' }, { id: 'chr', title: 'Character' }],
+			wins: [{ id: 'main', title: 'Map' }, { id: 'inv', title: 'Inventory' }, { id: 'msg', title: 'Messages' }, { id: 'mon', title: 'Visible' }, { id: 'rec', title: 'Recall' }, { id: 'eqp', title: 'Equipment' }, { id: 'chr', title: 'Character' }],
 			multi: { d: 'v', r: s.bottom, a: { d: 'h', r: s.side, a: 'main', b: { d: 'v', r: s.inv, a: 'inv', b: 'mon' } }, b: 'msg' },
 			single: 'main',
 			state: L.wm, noFont: 'main',
@@ -199,13 +199,13 @@
 	function termShape(i) {
 		var box = inner(i), cw, ch, font, cols, rows;
 		if (!i) {
-			/* No big-tile mode in 2.9.3: square cells for tiles, half width for text */
-			if (tilesOn()) ch = cw = L.gtile;
-			else { ch = L.tile; cw = L.tile / 2; }
+			/* Text cells are half as wide as high; with tiles a grid is two
+			   cells (the game's big tiles, MAP_STEP in defines.h) */
+			ch = tilesOn() ? L.gtile : L.tile; cw = ch / 2;
 			font = Math.floor(Math.min(ch * 0.8, cw / 0.62));
-			/* 2.9.3 draws a fixed 80x24 screen (SCREEN_HGT/WID panels) */
-			cols = 80;
-			rows = 24;
+			/* The game fits its map view to the term (web_set_view()); 80x24 at least */
+			cols = clamp(Math.floor(box.w / cw), 80, 255);
+			rows = clamp(Math.floor(box.h / ch), 24, 255);
 		} else {
 			font = L.font[TERMS[i].id];
 			cw = Math.ceil(measure(font)); ch = Math.round(font * 1.3);
@@ -486,10 +486,12 @@
 
 		pict: function (t, x, y, n, ap, cp, tap, tcp) {
 			var T = terms[t], c = T.ctx, H = Module.HEAPU8, st = 1;
-			var w = T.cw * st, h = T.ch;
+			var w = T.cw, h = T.ch;
 			var sw = tiles.naturalWidth, sh = tiles.naturalHeight;
 			for (var i = 0; i < n; i++) {
 				var a = H[ap + i], k = H[cp + i];
+				/* Second cell of a big tile: drawn with the first */
+				if (a === 255 && k === 255) continue;
 				var ta = H[tap + i], tk = H[tcp + i];
 				var px = (x + i * st) * T.cw, py = y * T.ch;
 
@@ -509,11 +511,12 @@
 				if (fx + TILE > sw || fy + TILE > sh) fx = fy = 0;
 				if (bx + TILE > sw || by + TILE > sh) bx = by = 0;
 
+				var tw = 2 * T.cw;	/* big tile: two cells */
 				c.fillStyle = '#000';
-				c.fillRect(px, py, w, h);
+				c.fillRect(px, py, tw, h);
 				if ((ta & 0x80) && (tk & 0x80) && (bx !== fx || by !== fy))
-					c.drawImage(tiles, bx, by, TILE, TILE, px, py, w, h);
-				c.drawImage(tiles, fx, fy, TILE, TILE, px, py, w, h);
+					c.drawImage(tiles, bx, by, TILE, TILE, px, py, tw, h);
+				c.drawImage(tiles, fx, fy, TILE, TILE, px, py, tw, h);
 			}
 		},
 

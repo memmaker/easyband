@@ -1107,7 +1107,7 @@ void move_cursor_relative(int y, int x)
 	vy = ky + ROW_MAP;
 
 	/* Location in window */
-	vx = kx + COL_MAP;
+	vx = kx * MAP_STEP + COL_MAP;
 
 	/* Go there */
 	Term_gotoxy(vx, vy);
@@ -1145,7 +1145,7 @@ void print_rel(char c, byte a, int y, int x)
 	vy = ky + ROW_MAP;
 
 	/* Location in window */
-	vx = kx + COL_MAP;
+	vx = kx * MAP_STEP + COL_MAP;
 
 	/* Hack -- Queue it */
 #ifdef USE_TRANSPARENCY
@@ -1278,7 +1278,7 @@ void lite_spot(int y, int x)
 	vy = ky + ROW_MAP;
 
 	/* Location in window */
-	vx = kx + COL_MAP;
+	vx = kx * MAP_STEP + COL_MAP;
 
 #ifdef USE_TRANSPARENCY
 
@@ -1287,6 +1287,9 @@ void lite_spot(int y, int x)
 
 	/* Hack -- Queue it */
 	Term_queue_char(vx, vy, a, c, ta, tc);
+
+	/* Big tile: the second cell is a filler the page skips */
+	if (MAP_STEP == 2) Term_queue_char(vx + 1, vy, 255, 255, 0, 0);
 
 #else /* USE_TRANSPARENCY */
 
@@ -1325,12 +1328,12 @@ void prt_map(void)
 
 	/* Assume screen */
 	ty = ROW_MAP + SCREEN_HGT;
-	tx = COL_MAP + SCREEN_WID;
+	tx = COL_MAP + SCREEN_WID * MAP_STEP;
 
 	/* Dump the map */
 	for (y = p_ptr->wy, vy = ROW_MAP; vy < ty; vy++, y++)
 	{
-		for (x = p_ptr->wx, vx = COL_MAP; vx < tx; vx++, x++)
+		for (x = p_ptr->wx, vx = COL_MAP; vx < tx; vx += MAP_STEP, x++)
 		{
 
 #ifdef USE_TRANSPARENCY
@@ -1340,6 +1343,9 @@ void prt_map(void)
 
 			/* Hack -- Queue it */
 			Term_queue_char(vx, vy, a, c, ta, tc);
+
+			/* Big tile: the second cell is a filler the page skips */
+			if (MAP_STEP == 2) Term_queue_char(vx + 1, vy, 255, 255, 0, 0);
 
 #else /* USE_TRANSPARENCY */
 
@@ -3216,10 +3222,10 @@ void map_area(void)
 
 
 	/* Pick an area to map */
-	y1 = p_ptr->wy - randint(10);
-	y2 = p_ptr->wy+SCREEN_HGT + randint(10);
-	x1 = p_ptr->wx - randint(20);
-	x2 = p_ptr->wx+SCREEN_WID + randint(20);
+	y1 = DETECT_Y1 - randint(10);
+	y2 = DETECT_Y1 + SCREEN_HGT_STD + randint(10);
+	x1 = DETECT_X1 - randint(20);
+	x2 = DETECT_X1 + SCREEN_WID_STD + randint(20);
 
 	/* Efficiency -- shrink to fit legal bounds */
 	if (y1 < 1) y1 = 1;

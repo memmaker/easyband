@@ -3109,8 +3109,13 @@ void explore_step(void)
 			if ((r_info[m_ptr->r_idx].flags1 & (RF1_NEVER_MOVE)) &&
 			    (distance(py, px, m_ptr->fy, m_ptr->fx) > 1)) continue;
 
-			auto_explore = 0;
-			msg_print("You see a monster nearby.");
+			{
+				char m_name[80];
+
+				monster_desc(m_name, m_ptr, 0x08);
+				auto_explore = 0;
+				msg_format("In view: %s.", m_name);
+			}
 			return;
 		}
 	}

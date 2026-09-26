@@ -28,3 +28,9 @@ python3 -m venv ../venv && ../venv/bin/pip install pillow pyte
 #   "playwright install"): npm i playwright@1.56 in a scratch dir $S/pw
 #   python3 -m http.server 8765 -d web/dist &
 #   NODE_PATH=$S/pw/node_modules node web/tests/stage1.js SEED
+
+# Mac side (stage 7, 2026-09-26): Homebrew emscripten on PATH (brew install
+# emscripten; /opt/homebrew/bin/emcc), no emsdk. build.sh takes rvip-wm.js from
+# ~/Games/rvip-tools/web/, sounds.py the Dubtrain pack from ~/Downloads,
+# make-help.py the Docs entry easyband.html from ~/Desktop/Games/Roguelikes/Docs.
+#   sh web/build.sh && sh web/deploy.sh

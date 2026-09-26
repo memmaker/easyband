@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Write lib/user/graf-shb.prf: Shockbolt tiles (Angband 4.2's 64x64 set,
-bundled in rvip/templates/tactical-angband) for Easyband's (Angband 2.9.3)
+from ~/Games/tactical-angband) for Easyband's (Angband 2.9.3)
 r_info / k_info / f_info entries and the S: slots (bolts, flavours).
 Ported from the Zangband web port's generator.
 
@@ -10,8 +10,8 @@ same colour if possible; objects: same tval) and is marked "# stand-in".
 Features (2.9.3's fixed FEAT_* list: shops, traps, doors) and the S: slots
 are mapped here by hand.  Run from the repo root: python3 web/mkgraf-shb.py"""
 import re, os, unicodedata
-SHB = 'rvip/templates/tactical-angband/lib/shockbolt'
-GD = 'rvip/templates/tactical-angband/lib/gamedata'
+SHB = os.path.expanduser('~/Games/tactical-angband/lib/tiles/shockbolt')
+GD = os.path.expanduser('~/Games/tactical-angband/lib/gamedata')
 ZE = 'lib/edit'
 COLS = 'dwsorgbuDWvyRGBU'
 CNAME = ['Dark', 'White', 'Slate', 'Orange', 'Red', 'Green', 'Blue', 'Umber', 'Light Dark',

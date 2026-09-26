@@ -146,7 +146,7 @@ SAVING = '''<ul>
 </ul>'''
 
 WEB = '''<ul>
-<li><strong>Windows:</strong> the map fills the big window; Inventory and Monsters (the monsters in view) are on the right, Messages along the bottom. Recall, Equipment and Character can be turned on under <em>Windows</em>.</li>
+<li><strong>Windows:</strong> the map fills the big window; Inventory and Visible (the monsters in view) are on the right, Messages along the bottom. Recall, Equipment and Character can be turned on under <em>Windows</em>.</li>
 <li><strong>Resize windows</strong> by dragging the gaps between them. The windows always fill the screen and never overlap; the game redraws them at their new size. <em>Reset windows</em> puts everything back.</li>
 <li><strong>Zoom:</strong> <em>Zoom −</em> / <em>Zoom +</em> change the size of the map. Hover over a small window's title to show its <em>A−</em> / <em>A+</em> buttons, which change its text size.</li>
 <li><strong>Rename a window</strong> by clicking its title, typing a new name and pressing <kbd>Enter</kbd> (<kbd>Esc</kbd> cancels, an empty name restores the default).</li>
