@@ -64,6 +64,16 @@ count coverage of the 16x16 set against every `N:` entry of
 
 ## RVIP progress
 
+### Source restored (2026-09-26, Mac side)
+The empty drop was a Mac-side extraction failure (p7zip/7zz cannot decode
+this solid RAR; The Unarchiver `unar` can). The real source is now in the
+repo: 198 files with content. Only the six `lib/user/font-*.prf` files were
+unreadable and are still empty; `font-x11.prf` is the only one the web
+frontend loads, so write a minimal one (Angband 2.9.3's maps a handful of
+wall/floor glyphs; an empty file is acceptable). The game is **Angband 2.9.3**
+based (`readme.txt` banner). Continue with stage 1 as planned; the toolchain
+recorded in `web/toolchain.sh` is still valid.
+
 ### Stage 1 (get + build): BLOCKED 2026-09-26 — upstream source is empty
 - **The upstream drop has no content.** Commit `351b2ba` ("upstream Easyband
   v2.3 ...") holds 210 files outside `rvip/` and every one is **0 bytes**
