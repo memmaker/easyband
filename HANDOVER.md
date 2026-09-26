@@ -1,5 +1,12 @@
 # Easyband v2.3: handover
 
+> **Public repo** (this folder, remote `memmaker` = github.com/memmaker/easyband):
+> history without the cloud bundle. The brief below and the `rvip/` bundle it
+> describes live in the private cloud history, **memmaker/easyband-cloud**
+> (`~/Games/easyband-cloud`). Upstream archive commit: `2c3e95b` here,
+> `00f2a06` there. The Mac build takes shared files from `~/Games/rvip-tools/web`,
+> `~/Games/tactical-angband`, `~/Downloads/Dubtrain Angband Sound Pack v3.1.0`.
+
 ## Cloud experiment (read this first)
 
 This repo runs the RVIP import in a Claude Code **cloud** session. Everything
@@ -72,7 +79,7 @@ count coverage of the 16x16 set against every `N:` entry of
   Hill/Teague/Swiger 2.0–2.6.2; Moria Koeneke 1985, Umoria Wilson 1989).
   Licence: the Angband/Moria notice in the source headers (not-for-profit
   copying; `SRC/main.c` l.3-9), no GPL file. Upstream = the archive drop
-  `00f2a06` (no git history).
+  `00f2a06` (no git history; `2c3e95b` in the public repo).
 - Folder = repo root; sources in **`SRC/`** (upper case), prefs in
   **`lib/user`** (2.9.3 has no `lib/pref`), edit files `lib/edit`, case **A**.
   `SRC/Makefile.std` is stale (names `cmd-attk.c` etc. that do not exist):
@@ -411,3 +418,66 @@ recorded in `web/toolchain.sh` is still valid.
 - `sh web/build.sh && sh web/deploy.sh` (stage 5's live-URL check is still
   open: https://ruzzoli.de/roguelikes/easyband/), browser check on the live
   page, Docs entry (above), merge `rvip/LESSONS.md` into RVIP.md.
+
+### Stage 7 — publish (done 2026-09-26, Mac)
+- **Mac check** (browser pane, own tab, `web/dist` served locally with
+  `Cache-Control: no-store`): birth (Human Warrior), town, wield torch,
+  `>` walks to the entrance and descends, `H` explores and stops on
+  monsters, Enter menu + submenu, `i` list + action box, Windows ▾
+  (Equipment, Character on) → zoom → Ctrl-X → "Play again" → reload →
+  same windows and character, Help guide (Docs entry), Tiles off/on,
+  Sound/Music off at first load, Sound on after a click (`sound/eat.wav`
+  on eating), `sound.cfg` read from the preload (no `.cfg` request), no
+  console errors (only Chrome's beforeunload notices from forced reloads).
+- **What the cloud got wrong** (fixed in `442af2e` "RVIP: stage 5/6
+  fixes (Mac)"): the map was 80 square cells across the window (6 px
+  grids in the pane, sidebar text spread over square cells, bottom half of
+  the Map window empty). Now the map view follows the window
+  (`SCREEN_HGT/WID` = `web_view_hgt/wid` under `USE_WEB`, `web_set_view()`
+  in `main-web.c`, status row `ROW_MAP + SCREEN_HGT`, `prt_depth()`'s literal
+  23), tiles are big tiles over two half-width text cells (`MAP_STEP`,
+  filler 255/255 skipped by the page); town layout and detection/magic
+  mapping keep the fixed 66x22 (`SCREEN_*_STD`, `DETECT_Y1/X1`).
+  `dungeon.c` `fixed_shape` made `Term_resize` fail silently after the
+  first layout change (off under `USE_WEB`; full `do_cmd_redraw()` after a
+  main resize). Messages: repeats fold to "(xN)" (from the old local stash),
+  not the blank birth separator lines. Window "Monsters" → "Visible".
+  Explore stop names the monster ("In view: ...").
+- **Stash**: kept the message fold, the "In view" message, the local
+  tactical-angband paths of `mkgraf-shb.py`/`tile-coverage.py`, "Visible";
+  dropped the rest (the cloud had it).
+- **Docs**: entry `easyband.html` in `~/Desktop/Games/Roguelikes/Docs`
+  (`build-docs.py` GAMES + `parse_easyband()`, `guides.py` GUIDES + SAVING),
+  generated from `make-help.py`'s `GAME`; `make-help.py` now reads it.
+- **Repos**: public **memmaker/easyband** (this folder, remote `memmaker`,
+  branch `main`, `git filter-repo --path rvip --path web/shots
+  --invert-paths`); private **memmaker/easyband-cloud** (renamed,
+  `~/Games/easyband-cloud`, remote `origin`). README with upstream
+  `2c3e95b` and the compare view.
+- **Live**: https://ruzzoli.de/roguelikes/easyband/ (`sh web/build.sh && sh
+  web/deploy.sh`), og block by hand (image `roguelikes/easyband.png`).
+  Index `a7d4693`: card before Quickband (`easyband.png`, 60 Shockbolt
+  monsters at 32 px, 384x160), count 34, tree Angband → GSN2Band (2000s ·
+  Gwidon S. Naskrent, new node) → Easyband (2001 · Andres Zanzani). Year
+  from the archive dates (Easyband 2.3 files 2001-08/09; `readme.txt`
+  2001-08-07); GSN2Band's own year not checked (stage 8).
+- Test IndexedDB `/easyband/...` deleted on localhost:64185 and ruzzoli.de.
+- Open problems: at 80 columns minimum (status line) the tiled map in a
+  narrow Map window is still small (e.g. with Equipment + Character on);
+  a menu box ending on a big tile's filler cell can leave a stale half
+  (JS skips the filler, as in Zangband); detection is the fixed 66x22
+  centred on the view, so it can cover grids outside a small view; the
+  `====` birth separator stays in Messages (upstream).
+
+### Next: stage 8 (shrine)
+- Page `~/Games/roguelikes-index/shrine/easyband.html` (+ `shrine/easyband/`),
+  Info button on the card, ✦ in the tree, `#bar h1` link in `web/index.html`.
+- Material: manual/help = `lib/help/*.txt` (2.9.3 help files: `general.txt`,
+  `command.txt`, `birth.txt`, `playing.txt`, `version.txt`, ...), the
+  in-game `?` menu; readme `readme.txt` (Angband 2.9.3's); licence = the
+  Angband/Moria notice in the source headers (`SRC/main.c` l.3-9; no GPL
+  file); changelog `Easyband23.txt` (2.1 → 2.2 → 2.3 changes); credits
+  `lib/file/news.txt` (GSN2Band10 line). Walkthrough: none known (look on
+  RogueBasin / angband.oook.cz; the archive's author site
+  http://www.majerle.org is from 2001). Dates: archive entries 2000-07
+  (Angband 2.9.3 base) to 2001-09 (Easyband 2.3).
