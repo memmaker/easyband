@@ -201,7 +201,7 @@ parts.append(section('credits', 'Credits', GAME['credits']))
 parts.append('<h2 id="h-version">About this version</h2><ul>'
              '<li>Based on <strong>Easyband 2.3</strong> (Angband 2.9.3 / GSN2Band10).</li>'
              '<li>Original source: the Easyband 2.3 source archive (<code>easyband23_src.rar</code>), '
-             'commit <code>00f2a06</code> in the repository.</li>'
+             'commit <code>2c3e95b</code> in the repository.</li>'
              '<li>Our changes (port, auto-explore, command menu, web build): '
-             '<a href="https://github.com/memmaker/easyband/compare/00f2a06...main" target="_blank" rel="noopener">memmaker/easyband</a></li></ul>')
+             '<a href="https://github.com/memmaker/easyband/compare/2c3e95b...main" target="_blank" rel="noopener">memmaker/easyband</a></li></ul>')
 print('\n'.join(parts))
