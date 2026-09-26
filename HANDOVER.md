@@ -481,3 +481,26 @@ recorded in `web/toolchain.sh` is still valid.
   RogueBasin / angband.oook.cz; the archive's author site
   http://www.majerle.org is from 2001). Dates: archive entries 2000-07
   (Angband 2.9.3 base) to 2001-09 (Easyband 2.3).
+
+### Stage 8 — shrine (done 2026-09-26, Mac)
+- **Live**: https://ruzzoli.de/roguelikes/shrine/easyband.html (+ `shrine/easyband/`
+  `manual.html`, `changelog.txt`, `license.txt`); index `7b6a679`: card Info
+  button, tree ✦, game page `#bar h1` links to the shrine (this repo
+  `de06045`, deployed by copying `web/index.html` into `dist`).
+- **Manual**: `python3 web/mkmanual.py > ~/Games/roguelikes-index/shrine/easyband/manual.html`
+  (all 14 `lib/help` files in `help.hlp` menu order, `(file.txt)` refs linked).
+  Changelog = `Easyband23.txt` (Latin-1 → UTF-8); licence = the source-header
+  notice + readme's NO WARRANTY. No walkthrough exists; cheats: `^W`/`^A` and
+  the cheat options do **not** mark the character (Easyband removed it).
+- **Lineage (web-checked)**: Easyband 1.0 = 9 Jan 2001, 2.3 = 24 Sep 2001
+  (Bablos' variant list, archived; RogueBasin's 2 Nov 2001 is the Amiga
+  date). 2.0 adopted GSN2band 1.0 (10 Nov 2000, Gwidon S. Naskrent, "based on
+  Angband 2.9.1"). Base version disagrees: GSN2band page/RogueBasin 2.9.1,
+  `defines.h` 2.9.2, readme/news 2.9.3. Tree now: GSN2Band 2000 from 2.9.1 →
+  Easyband 2001 from GSN2Band 1.0. GSNband (1998, on Zangband 2.2.8) is not
+  in the tree (not its code parent).
+- Open problems: card text still says "about 130 new monsters" (that number
+  was the tile gap; Easyband itself names only 2 new monsters, most extras
+  come from GSN2band/GSNband); og block kept the card text.
+
+### Next: stage 9 (graveyard + leaderboard)
