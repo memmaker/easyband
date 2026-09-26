@@ -3918,6 +3918,9 @@ void object_kind_track(int k_idx)
  */
 void disturb(int stop_search, int unused_flag)
 {
+	/* RVIP: stop auto-explore / stair walks */
+	explore_reset();
+
 	/* Cancel auto-commands */
 	/* p_ptr->command_new = 0; */
 

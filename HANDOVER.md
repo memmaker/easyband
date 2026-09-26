@@ -140,6 +140,51 @@ count coverage of the 16x16 set against every `N:` entry of
   commands in `process_command()` (`dungeon.c`), `disturb()` in `cave.c`/
   `xtra2.c`. Key: `H` if free in `process_command()` and `lib/user/pref.prf`.
 
+### Stage 2 (explore + stairs): done 2026-09-26 (cloud)
+- **Explore key `H`** (free in the original keyset and `lib/user/pref.prf`
+  `C:0:` keymaps; roguelike `H` stays "run west": no explore key there).
+- Code: end of `SRC/cmd2.c`: `auto_explore` (0 / explore / stairs up /
+  stairs down), `explore_step()`, `do_cmd_explore()`, `explore_to_stairs()`,
+  `explore_reset()`, `explore_new_level()`; prototypes in `externs.h`.
+- Hooks: `process_command()` `case 'H'` (`dungeon.c`); `process_player()`
+  treats `auto_explore` like running (key abort check, `else if
+  (auto_explore) explore_step();` before running); `dungeon()` calls
+  `explore_new_level()` after `p_ptr->leaving = FALSE`; `disturb()`
+  (`cave.c`) calls `explore_reset()`. `do_cmd_go_up/down()` (`cmd2.c`) walk
+  to the nearest known staircase instead of "I see no ... staircase here",
+  and take it on arrival.
+- **Known grid**: `cave_info[y][x] & CAVE_MARK`, or the explorer's own
+  `explore_seen[][]` (every grid with `CAVE_SEEN|CAVE_MARK` at each step;
+  2.9.3 forgets torch-lit floors). BFS over `DUNGEON_HGT x DUNGEON_WID`;
+  passable: floor, invisible trap, glyph, open/broken door, stairs, rubble
+  (dug with `do_cmd_tunnel_aux()`), closed doors (opened with
+  `do_cmd_open_aux()`; a locked one is tried once, then skipped: 
+  `explore_done[][] = 2`). Never: known traps, shop entrances, walls, a
+  visible monster's grid.
+- Targets: a known passable grid next to an unknown one, or a grid with a
+  seen object (`o_ptr->marked`) not yet stood on. Stops: `disturb()`, a new
+  message (`message_num()` changed), a visible monster in line of sight
+  (explore only; never-moving ones only when adjacent), a step that did not
+  move, no light in the dungeon ("You have no light to explore by."),
+  "Nothing left to explore." / "You know of no way up/down.".
+- Tested (Playwright, `web/tests/stage2.js`): town `>` walks to the
+  entrance and descends ("You enter a maze of down staircases"); DL1 `H`
+  walks rooms and corridors, opens doors, picks up gold, tries a locked door
+  once ("You failed to pick the lock."), stops on monsters; `<` walks back
+  to the up staircase and climbs to town. Screens `web/shots/stage2-*.png`.
+  Note: Easyband's starting kit keeps the torches in the pack (wield one
+  first, else "You have no light").
+- Open problems: a visible erratic monster that never comes closer keeps
+  stopping explore (by design, A2); no explore key in the roguelike keyset;
+  the move onto an object may prompt (game's own pickup).
+
+### Next: stage 3 (Enter menu + inventory)
+- `request_command()` (`SRC/util.c` ~l.3013): keymaps via
+  `keymap_act[mode][ch]`, auto-commands in `p_ptr->command_new`; Enter is
+  "ignore" in `process_command()`. Item lists `show_inven()`/`show_equip()`
+  (`object1.c`), `get_item()` (`object1.c`), `do_cmd_inven()/equip()`
+  (`cmd3.c`). Port Zangband's `cmd_menu()` / `inven_screen()` (A3b/A3c).
+
 ### Source restored (2026-09-26, Mac side)
 The empty drop was a Mac-side extraction failure (p7zip/7zz cannot decode
 this solid RAR; The Unarchiver `unar` can). The real source is now in the

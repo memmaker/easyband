@@ -1635,6 +1635,13 @@ static void process_command(void)
 		}
 
 		/* Go up staircase */
+		/* RVIP: auto-explore */
+		case 'H':
+		{
+			do_cmd_explore();
+			break;
+		}
+
 		case '<':
 		{
 			do_cmd_go_up();
@@ -2172,7 +2179,7 @@ static void process_player(void)
 	if (!avoid_abort)
 	{
 		/* Check for "player abort" */
-		if (p_ptr->running ||
+		if (p_ptr->running || auto_explore ||
 		    p_ptr->command_rep ||
 		    (p_ptr->resting && !(turn & 0x7F)))
 		{
@@ -2296,6 +2303,12 @@ static void process_player(void)
 
 			/* Take a turn */
 			p_ptr->energy_use = 100;
+		}
+
+		/* RVIP: auto-explore / stair walk */
+		else if (auto_explore)
+		{
+			explore_step();
 		}
 
 		/* Running */
@@ -2504,6 +2517,9 @@ static void dungeon(void)
 
 	/* Not leaving */
 	p_ptr->leaving = FALSE;
+
+	/* RVIP: the explorer forgets the old level */
+	explore_new_level();
 
 
 	/* Reset the "command" vars */

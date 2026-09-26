@@ -363,6 +363,14 @@ extern void do_cmd_load_screen(void);
 extern void do_cmd_save_screen(void);
 extern void do_cmd_knowledge(void);
 
+/* cmd2.c (RVIP auto-explore) */
+extern int auto_explore;
+extern void explore_new_level(void);
+extern void explore_reset(void);
+extern void explore_step(void);
+extern void do_cmd_explore(void);
+extern void explore_to_stairs(bool up);
+
 /* cmd5.c */
 extern void brand_weaponx(void);
 extern void do_cmd_browse(void);
