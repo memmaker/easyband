@@ -10,6 +10,10 @@ rm -rf "$OUT" web/stage && mkdir -p "$OUT" web/stage/lib
 # Game files: edit/file/help and the pref files (in lib/user for 2.9.3);
 # lib/data/*.raw are rebuilt by the game at start, BMP tiles are not used
 for d in edit file help user; do cp -R lib/$d web/stage/lib/; done
+# Sound: own samples + Dubtrain gaps; sound.cfg into the preload (the page
+# reads it with FS.readFile, never fetch), wavs to dist/sound
+mkdir -p web/stage/lib/xtra/sound
+python3 web/sounds.py web/stage/lib/xtra/sound/sound.cfg "$OUT/sound"
 mkdir -p web/stage/lib/data web/stage/lib/save web/stage/lib/apex web/stage/lib/bone web/stage/lib/info
 
 # Sources: every game file of SRC/ except the other front ends
@@ -30,7 +34,9 @@ cp web/index.html rvip/web/rvip-wm.js web/easyband.js "$OUT/"
 # from rvip/templates/tactical-angband); mapping lib/user/graf-shb.prf
 # (python3 web/mkgraf-shb.py), drawn nearest-neighbour at cell size
 cp web/tiles.webp "$OUT/"
-# Help: stub until stage 6 writes the guide (web/make-help.py)
-echo '<p>The game guide comes with the next build. Press ? in the game for its own help.</p>' > "$OUT/help.html"
+# Help: the game guide (Docs entry easyband.html when present, else web/make-help.py's own)
+python3 web/make-help.py > "$OUT/help.html"
+# Town music (loops at depth 0, off by default)
+mkdir -p "$OUT/music" && cp web/music/new_town.ogg "$OUT/music/"
 rm -rf web/stage
 ls -la "$OUT"

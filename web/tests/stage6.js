@@ -1,0 +1,43 @@
+/* Stage 6: Help guide, Sound/Music off by default, on by a real click,
+   eat/quaff fire their samples, the town music loads, both survive a reload */
+const T = require('./lib.js');
+(async () => {
+	const { chromium } = require('playwright');
+	const b = await chromium.launch();
+	const c = await b.newContext({ viewport: { width: 1280, height: 800 } });
+	const media = [], music = [];
+	c.on('request', r => { if (/\/(sound|music)\//.test(r.url())) media.push(r.url().replace(/.*\//, '')); });
+	c.on('response', r => { if (/\/music\//.test(r.url())) music.push(r.status()); });
+	let { browser, ctx, page, errors } = await T.open({ browser: b, ctx: c });
+	const ok = (name, v, info = '') => console.log((v ? 'PASS ' : 'FAIL ') + name + (info ? '  ' + info : ''));
+	await T.waitText(page, /Press any key/);
+	await T.key(page, 'Escape');
+	await T.birth(page, 'Soundy');
+	await T.key(page, 'Escape', {}, 500);
+	const btn = id => page.evaluate(id => document.getElementById(id).textContent, id);
+	ok('sound off by default', /off/.test(await btn('btn-sound')));
+	ok('music off by default', /off/.test(await btn('btn-music')));
+	await page.click('#btn-help'); await page.waitForTimeout(800);
+	const h = await page.evaluate(() => document.getElementById('help-body').innerText);
+	ok('help guide', /Keyboard controls/.test(h) && /Auto-explore/.test(h) && /Credits/.test(h) && /Andres Zanzani/.test(h), h.length + ' chars');
+	await T.shot(page, 'stage6-help');
+	await T.key(page, 'Escape', {}, 300);
+	ok('help closed by Esc', await page.evaluate(() => document.getElementById('help').hidden));
+	await page.click('#btn-sound'); await page.click('#btn-music'); await page.waitForTimeout(800);
+	ok('buttons on', /on/.test(await btn('btn-sound')) && /on/.test(await btn('btn-music')));
+	await T.keys(page, 'E'); await page.waitForTimeout(300); await T.keys(page, 'a'); await page.waitForTimeout(800);
+	await T.key(page, 'Escape', {}, 300);
+	await T.keys(page, 'q'); await page.waitForTimeout(300); await T.keys(page, 'b'); await page.waitForTimeout(800);
+	await T.key(page, 'Escape', {}, 500);
+	console.log('media requests: ' + media.join(' '));
+	ok('eat sample', media.includes('eat.wav'));
+	ok('quaff sample', media.some(m => /bottle|cork/.test(m)));
+	ok('town music', media.includes('new_town.ogg') && music.every(x => x < 400), music.join());
+	await page.waitForTimeout(1500);
+	await page.reload({ waitUntil: 'load' });
+	await T.waitText(page, /Press any key/);
+	await page.waitForTimeout(1000);
+	ok('audio buttons after reload', /on/.test(await btn('btn-sound')) && /on/.test(await btn('btn-music')));
+	ok('no console errors', !errors.filter(e => !/404|play\(\)|NotAllowed/.test(e)).length, JSON.stringify(errors));
+	await browser.close();
+})().catch(e => { console.error(e); process.exit(1); });

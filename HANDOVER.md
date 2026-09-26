@@ -373,3 +373,41 @@ recorded in `web/toolchain.sh` is still valid.
   `angband_sound_name[]` in `SRC/tables.c`/`variable.c`), fill from
   `rvip/templates/dubtrain`; hook `TERM_XTRA_SOUND` → `js_sound` exists.
 - Help: `web/make-help.py` from the template, `PAGE='easyband.html'`.
+
+### Stage 6 (docs + sound): done 2026-09-26 (cloud; Docs entry left for the Mac)
+- **Help** (`web/make-help.py` → `$OUT/help.html` in `build.sh`): About,
+  Keyboard controls (keys to remember incl. `H`, Enter menu, item menus,
+  `<`/`>` walks; essentials; complete list of 83 keys parsed from
+  `lib/help/command.txt`, both keysets), Saving (web), Tips, New player's
+  guide, Playing in the browser, Credits (Zanzani, Naskrent, Ruehlmann,
+  Harrison, 2.0–2.6.2 team, Koeneke, Wilson; Shockbolt © 2012 Raymond
+  Gaustadnes; Dubtrain), About this version (upstream `00f2a06` + compare
+  link `memmaker/easyband/compare/00f2a06...main`).
+- **Docs page: NOT done here** — `~/Desktop/Games/Roguelikes/Docs` is on
+  the Mac. `make-help.py`'s `GAME` dict holds the content in the Docs
+  fields; Mac side: add `GAMES` entry `easyband.html` in `build-docs.py`
+  (essentials, complete list from `lib/help/command.txt`, Tips, Credits,
+  "In the browser"), `GUIDES['easyband.html']` (first section = About) and
+  `SAVING['easyband.html']` in `guides.py`, run `python3 build-docs.py`.
+  `make-help.py` then picks the Docs entry up automatically.
+- **Sound**: `web/sounds.py <cfg> <wavdir>` (events from
+  `angband_sound_name[]` in `SRC/variable.c`, 28): Easyband's own samples
+  for 15 events, Dubtrain (`rvip/templates/dubtrain`) for 12 empty ones
+  (`zap`→`zap_rod`, `stairs`→`stairs_down`), `walk` silent. Web cfg into the
+  preload (`/easyband/lib/xtra/sound/sound.cfg`, read by `loadSoundCfg()`
+  with `FS.readFile`), 36 wavs (1.5 MB) to `dist/sound`. Upstream cfg
+  untouched. Music: `web/music/new_town.ogg` (from the Zangband template,
+  originally heavenAndHell) → `dist/music`, loops at depth 0. C/JS hooks
+  unchanged (`TERM_XTRA_SOUND` → `js_sound`, `js_depth`).
+- Tested (Playwright `web/tests/stage6.js`, all PASS): fresh load Sound
+  off / Music off; Help shows the guide, Esc closes; real clicks on Sound
+  and Music → eat fires `eat.wav`, quaff `plm_cork_*.wav`,
+  `music/new_town.ogg` 200; reload → both still on; no console errors.
+  Screen `web/shots/stage6-help.png`.
+- Open problems: 2.9.3 calls `sound()` only for ~20 places (hit/miss/kill
+  via `message_type`); no hit/kill checked in the browser (same path).
+
+### Next: stage 7 (publish) — Mac side first
+- `sh web/build.sh && sh web/deploy.sh` (stage 5's live-URL check is still
+  open: https://ruzzoli.de/roguelikes/easyband/), browser check on the live
+  page, Docs entry (above), merge `rvip/LESSONS.md` into RVIP.md.
