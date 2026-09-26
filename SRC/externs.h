@@ -876,5 +876,6 @@ extern int web_view_hgt, web_view_wid, web_map_step;
 
 /* main-web.c */
 extern void web_sync_files(void);
+extern void web_run_end(void);
 
 #endif /* USE_WEB */

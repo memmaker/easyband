@@ -132,6 +132,34 @@ EM_JS(void, js_sync, (void), {
 });
 
 
+/* Run report (roguelikes-index/server/CONTRACT.md) through RvipWM's outbox;
+   never throws, offline it waits in the outbox. Negative ints are omitted. */
+EM_JS(void, js_beacon, (const char *ev, const char *name, const char *killer, int depth, int score, int turns, int lvl), {
+	try {
+		var p = [['g', 'easyband'], ['ev', UTF8ToString(ev)], ['name', name ? UTF8ToString(name) : ''],
+		         ['killer', killer ? UTF8ToString(killer) : ''], ['depth', depth], ['score', score], ['turns', turns], ['lvl', lvl]];
+		var q = p.filter(function (a) { return a[1] !== '' && !(a[1] < 0); })
+		         .map(function (a) { return a[0] + '=' + encodeURIComponent(a[1]); }).join('&');
+		if (window.RvipWM && RvipWM.report) RvipWM.report(q); else fetch('/roguelikes/beacon?' + q, { keepalive: true, mode: 'no-cors' }).catch(function () {});
+	} catch (e) {}
+});
+
+/* Called from close_game() (files.c) when the run is over, before kingly()
+   and the tombstone. Suicide (Q) and signals die too ("Quitting",
+   "Interrupting", "Abortion"); retiring as a winner keeps total_winner. */
+void web_run_end(void)
+{
+	cptr k = p_ptr->died_from, ev = "death";
+
+	if (p_ptr->total_winner) ev = "win", k = NULL;
+	else if (streq(k, "Quitting") || streq(k, "Interrupting") || streq(k, "Abortion")) ev = "quit", k = NULL;
+	else if (prefix(k, "a ")) k += 2;
+	else if (prefix(k, "an ")) k += 3;
+	else if (prefix(k, "the ") || prefix(k, "The ")) k += 4;
+	js_beacon(ev, op_ptr->full_name, k, p_ptr->depth, (int)total_points(), (int)turn, p_ptr->lev);
+}
+
+
 /* Persist the save directories (called after every save) */
 void web_sync_files(void)
 {
