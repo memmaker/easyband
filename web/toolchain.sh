@@ -2,25 +2,29 @@
 # Toolchain for the Easyband web port (RVIP cloud run, 2026-09-26, Linux x86_64).
 # Everything below was run in the Claude Code cloud container and worked.
 
-# Emscripten (emsdk "latest" = 6.0.10, emsdk commit e566f7b,
-# releases 666337b525e673e769121856d175f6f52b8ead64; node 24.19.0 bundled)
+# Emscripten (emsdk "latest" = 6.0.10, releases 666337b525e673e769121856d175f6f52b8ead64;
+# ~300 MB from storage.googleapis.com, ~2 min; node bundled)
 git clone --depth 1 https://github.com/emscripten-core/emsdk ../emsdk
 (cd ../emsdk && ./emsdk install latest && ./emsdk activate latest)
-. ../emsdk/emsdk_env.sh
-emcc --version        # emcc ... 6.0.10 (d6c521a7f05449857c76bd99e396895583cf2083)
+. ../emsdk/emsdk_env.sh      # or: export PATH=../emsdk/upstream/emscripten:$PATH
+emcc --version               # emcc ... 6.0.10
+sh web/build.sh              # -> web/dist (zero warnings with -w off for casts, see HANDOVER)
 
-# Smoke test (passed): Asyncify + emscripten_sleep under node
-#   printf '#include <stdio.h>\n#include <emscripten.h>\nint main(){emscripten_sleep(1);puts("hi");return 0;}\n' > t.c
-#   emcc -O2 -sASYNCIFY t.c -o t.js && node t.js   -> hi
+# Python helpers (tile coverage needs Pillow, the ASan driver needs pyte)
+python3 -m venv ../venv && ../venv/bin/pip install pillow pyte
+../venv/bin/python web/tile-coverage.py new      # own 16x16 set: 87.8%
 
-# Native ASan build (A-Zangband): present in the image, not yet used
-#   gcc 13.3.0 (Ubuntu 24.04), clang 18.1.3; curses: libncurses-dev (apt) when needed
-#   python3 -m venv ../venv && ../venv/bin/pip install pyte   # screen reader for the pty driver
+# Native ASan build (A1 / A-Zangband), outside the repo ($W = scratch dir):
+#   gcc 13.3.0 (Ubuntu 24.04), libncurses-dev present.
+#   -DUSE_TPOSIX is needed: main-gcu.c tests _POSIX_VERSION before unistd.h
+#   is included, falls back to termio and the tty never goes raw.
+#   cp -r SRC lib $W/ && cd $W/SRC && gcc -O1 -g -fsanitize=address -fcommon \
+#     -DUSE_GCU -DUSE_TPOSIX -w -o ../angband \
+#     $(ls *.c | grep -v '^main\|^maid\|Readdib') main.c main-gcu.c -lncurses
+#   ../venv/bin/python web/asan-drive.py $W/angband SEED NKEYS   (new char, then restored)
 
 # Browser tests: Playwright with the preinstalled Chromium
 #   (PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers, chromium-1194; do NOT run
-#   "playwright install"); npm i -D playwright in a scratch dir, serve web/dist
-#   with python3 -m http.server.
-
-# NOT BUILT: the Easyband source in this repo is empty (see HANDOVER.md,
-# "Stage 1: blocked"), so web/build.sh does not exist yet.
+#   "playwright install"): npm i playwright@1.56 in a scratch dir $S/pw
+#   python3 -m http.server 8765 -d web/dist &
+#   NODE_PATH=$S/pw/node_modules node web/tests/stage1.js SEED

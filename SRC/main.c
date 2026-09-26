@@ -509,6 +509,19 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+#ifdef USE_WEB
+	/* Browser front end (main-web.c), registered as "x11" for the pref files */
+	if (!done)
+	{
+		extern errr init_web(int, char**);
+		if (0 == init_web(argc, argv))
+		{
+			ANGBAND_SYS = "x11";
+			done = TRUE;
+		}
+	}
+#endif
+
 #ifdef USE_X11
 	/* Attempt to use the "main-x11.c" support */
 	if (!done && (!mstr || (streq(mstr, "x11"))))
@@ -660,6 +673,14 @@ int main(int argc, char *argv[])
 
 	/* Initialize */
 	init_angband();
+
+#ifdef USE_WEB
+	/* Sub-window contents for new characters (init_angband() clears them) */
+	{
+		extern void web_init_windows(void);
+		web_init_windows();
+	}
+#endif
 
 	/* Hack -- If requested, display scores and quit */
 	if (show_score > 0) display_scores(0, show_score);

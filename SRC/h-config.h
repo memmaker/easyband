@@ -313,6 +313,13 @@
 
 
 
+/*
+ * Web port (main-web.c): the page draws a terrain tile under every sprite
+ */
+#ifdef USE_WEB
+# define USE_TRANSPARENCY
+#endif
+
 #endif
 
 

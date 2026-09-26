@@ -364,6 +364,7 @@ extern void do_cmd_save_screen(void);
 extern void do_cmd_knowledge(void);
 
 /* cmd5.c */
+extern void brand_weaponx(void);
 extern void do_cmd_browse(void);
 extern void do_cmd_study(void);
 extern void do_cmd_cast(void);
@@ -850,3 +851,10 @@ extern void show_floor(int *floor_list, int floor_num);
 extern int do_randart(u32b randart_seed);
 
 #endif /* GJW_RANDART */
+
+#ifdef USE_WEB
+
+/* main-web.c */
+extern void web_sync_files(void);
+
+#endif /* USE_WEB */

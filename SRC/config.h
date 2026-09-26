@@ -102,6 +102,11 @@
  */
 #define SAFE_SETUID
 
+/* Web port: no users or permissions in the browser (setuid fails) */
+#ifdef USE_WEB
+# undef SAFE_SETUID
+#endif
+
 
 /*
  * This flag enables the "POSIX" methods for "SAFE_SETUID".

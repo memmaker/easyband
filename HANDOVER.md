@@ -64,6 +64,82 @@ count coverage of the 16x16 set against every `N:` entry of
 
 ## RVIP progress
 
+### Stage 1 (get + build): done 2026-09-26 (cloud)
+- **Base**: Easyband 2.3 (banner "Easyband 2.3 · The Fun of Angband", Andres
+  Zanzani, andres_zanzani@yahoo.it, http://www.majerle.org), built on
+  GSN2Band10 (Gwidon S. Naskrent) on **Angband 2.9.3** (Robert Ruehlmann,
+  8 July 2000; before him Ben Harrison 2.7.0–2.8.5, Cutler/Astrand/Marsh/
+  Hill/Teague/Swiger 2.0–2.6.2; Moria Koeneke 1985, Umoria Wilson 1989).
+  Licence: the Angband/Moria notice in the source headers (not-for-profit
+  copying; `SRC/main.c` l.3-9), no GPL file. Upstream = the archive drop
+  `00f2a06` (no git history).
+- Folder = repo root; sources in **`SRC/`** (upper case), prefs in
+  **`lib/user`** (2.9.3 has no `lib/pref`), edit files `lib/edit`, case **A**.
+  `SRC/Makefile.std` is stale (names `cmd-attk.c` etc. that do not exist):
+  the source list is every `SRC/*.c` except `main*`, `maid-*`, `Readdib.c`.
+- **Web frontend `SRC/main-web.c`** (Zangband template, adapted): 2.9.3
+  z-term has `TERM_XTRA_CLEAR` (→ `js_clear`), **no big-tile mode**, plain
+  globals `inkey_flag`, `character_generated`, `p_ptr->is_dead`,
+  `p_ptr->depth`, window flags in `op_ptr->window_flag[]`, options via
+  `option_norm[OPT_*]` (set in `init_web()`: `auto_more`, `center_player`).
+  `main.c` is an `if (!done)` chain: `USE_WEB` block calls
+  `init_web(argc, argv)` and sets `ANGBAND_SYS = "x11"`; after
+  `init_angband()` (which zeroes the window flags) it calls
+  `web_init_windows()`. `web_run_end`/beacon not ported (stage 9).
+- Port edits (`USE_WEB`): `h-config.h` defines `USE_TRANSPARENCY` (pict hook
+  gets terrain `tap/tcp`), `config.h` undefines `SAFE_SETUID` (wasm
+  `setuid()` fails → quit at start), `save.c` `web_sync_files()` after a good
+  save, `defines.h` `GRAPHICS_SHOCKBOLT 3`, `externs.h` prototypes (also the
+  missing `brand_weaponx()`, an implicit declaration = wasm trap risk).
+  `lib/user/font-x11.prf` rewritten as a comment-only file (archive damage).
+- **Build**: `sh web/build.sh` (needs `emcc` on PATH, `web/toolchain.sh`) →
+  `web/dist`: `emcc -O2 -fcommon -std=gnu99 -DUSE_WEB -ISRC -w` + the RVIP
+  W7 flags (`-sASYNCIFY -sASYNCIFY_STACK_SIZE=65536 -sSTACK_SIZE=1048576
+  -sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=64MB -sFORCE_FILESYSTEM -lidbfs.js
+  -sENVIRONMENT=web`), preload `lib/{edit,file,help,user}` +
+  empty `data save apex bone info` as `/easyband/lib`. No wasm-ld warnings,
+  no `-Wcast-function-type-strict` hits, one implicit declaration (fixed).
+- **Page**: `web/index.html`, `web/easyband.js` (from `zangband.js`),
+  shared `rvip/web/rvip-wm.js` copied by the build. IDBFS on
+  `/easyband/lib/{save,apex,bone}` and **`/easyband/web`** (layout file
+  `web-layout.json`): `lib/user` is *not* persisted because the preloaded
+  pref files live there (a mount would hide them), so in-game pref dumps are
+  lost on reload. Save = `lib/save/0.PLAYER` (`-uPLAYER`).
+- **ASan** (native `-DUSE_GCU -DUSE_TPOSIX`, pty + pyte, `web/asan-drive.py`,
+  isolated `HOME`): 4 seeds × (2500 keys new character + 2000 restored).
+  Fixed in `port:` commit `2f7e980`: `u32b` was `long` → 64-bit hosts looped
+  forever in `Rand_div()` at birth (`h-type.h`, `__LP64__`); the Fortune
+  cookie (food sval 20) indexed the 20-entry mushroom flavour table and
+  scrolls reach sval 52 with `MAX_TITLES` 50 (`object1.c`); macro trigger key
+  burst overflow (`cmd4.c`, as Zangband/Frog); `main-gcu.c` used opaque
+  ncurses `curscr->_cury`. Then clean.
+- **Browser test** (Playwright/Chromium, `web/tests/stage1.js`, 3 seeds):
+  splash → birth (Human Warrior, all defaults) → town map, inventory and
+  monster list in their windows → 500 random keys → Ctrl-X → "Play again"
+  overlay → reload → same character restored; no console errors (only the
+  favicon/tiles.webp 404). Screens `web/shots/stage1-*.png`.
+- **Tiles decision: Shockbolt.** Own set (`lib/user/graf-new.prf` +
+  `lib/xtra/graf/16x16.bmp`, Adam Bolt) covers **1047/1192 = 87.8%**
+  (`web/tile-coverage.py new`): r_info 548/677 (Easyband's 129 new monsters
+  548–676 have no tile), k_info 435/451, f_info 64/64. Below 95% →
+  Shockbolt from `rvip/templates/tactical-angband`. Note: Easyband's
+  `r_info.txt` has **no index numbers** (`N:name`, numbered in order from 0,
+  `init1.c`).
+- Open problems: no big-tile mode in 2.9.3 → with tiles the map term needs
+  square cells (`easyband.js` `termShape()` already switches cw = tile /
+  tile÷2); Messages window shows a `====` rule when empty (upstream
+  `fix_message`); stage-1 page shows "Tiles: on" with no sheet yet.
+
+### Next: stage 2 (explore + stairs)
+- Port the explorer from the Zangband template (HANDOVER stage 2 there):
+  2.9.3 map is `cave_feat[y][x]`, `cave_info[y][x]` (`CAVE_MARK`,
+  `CAVE_GLOW`), objects `cave_o_idx`, monsters `cave_m_idx`; traps are
+  features (`FEAT_TRAP_HEAD..TAIL`, `FEAT_INVIS`), doors `FEAT_DOOR_HEAD`
+  (locked = `FEAT_DOOR_HEAD+1..+7`), stairs `FEAT_LESS/FEAT_MORE`, shops
+  `FEAT_SHOP_HEAD..TAIL`. Main loop `process_player()` in `SRC/dungeon.c`,
+  commands in `process_command()` (`dungeon.c`), `disturb()` in `cave.c`/
+  `xtra2.c`. Key: `H` if free in `process_command()` and `lib/user/pref.prf`.
+
 ### Source restored (2026-09-26, Mac side)
 The empty drop was a Mac-side extraction failure (p7zip/7zz cannot decode
 this solid RAR; The Unarchiver `unar` can). The real source is now in the
@@ -99,7 +175,7 @@ recorded in `web/toolchain.sh` is still valid.
   `/opt/pw-browsers`). `web/deploy.sh` (target `ruzzoli.de/roguelikes/easyband/`,
   guard line; never run). Lesson in `rvip/LESSONS.md`.
 
-### Next: stage 1 again (Mac side first)
+### Next: stage 1 again (Mac side first) — done, see Stage 1 above
 - Re-extract `Easyband (v2.3)[var][src].7z` / `easyband23_src.rar` with a tool
   that reads them (`7zz x`, `unar`), check `find . -size 0` is (nearly) empty
   and `SRC/dungeon.c` has content, commit the real files on top as

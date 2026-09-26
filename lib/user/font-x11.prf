@@ -1,0 +1,5 @@
+# File: font-x11.prf
+
+# The original file could not be extracted from the upstream archive
+# (see HANDOVER.md). The web port draws the standard characters, so
+# nothing needs to be remapped here.
