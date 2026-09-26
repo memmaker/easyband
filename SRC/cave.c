@@ -637,6 +637,9 @@ void map_info(int y, int x, byte *ap, char *cp)
 	/* Hack -- Assume that "new" means "Adam Bolt Tiles" */
 	bool graf_new = (use_graphics && streq(ANGBAND_GRAF, "new"));
 
+	/* RVIP web port: Shockbolt terrain comes as torch/lit/dark = c-1/c/c+1 */
+	bool graf_shb = (use_graphics == GRAPHICS_SHOCKBOLT);
+
 	bool sq_flag = FALSE;
 
 	/* Monster/Player */
@@ -674,7 +677,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 			c = f_ptr->x_char;
 
 			/* Special lighting effects */
-			if (view_special_lite && ((a == TERM_WHITE) || graf_new))
+			if (view_special_lite && ((a == TERM_WHITE) || graf_new || graf_shb))
 			{
 				/* Handle "seen" grids */
 				if (info & (CAVE_SEEN))
@@ -682,7 +685,12 @@ void map_info(int y, int x, byte *ap, char *cp)
 					/* Only lit by "torch" lite */
 					if (view_yellow_lite && !(info & (CAVE_GLOW)))
 					{
-						if (graf_new)
+						if (graf_shb)
+						{
+							/* Shockbolt torch-lit tile */
+							c -= 1;
+						}
+						else if (graf_new)
 						{
 							/* Use a brightly lit tile */
 							c += 2;
@@ -698,7 +706,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 				/* Handle "blind" */
 				else if (p_ptr->blind)
 				{
-					if (graf_new)
+					if (graf_new || graf_shb)
 					{
 						/* Use a dark tile */
 						c += 1;
@@ -713,7 +721,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 				/* Handle "dark" grids */
 				else if (!(info & (CAVE_GLOW)))
 				{
-					if (graf_new)
+					if (graf_new || graf_shb)
 					{
 						/* Use a dark tile */
 						c += 1;
@@ -728,7 +736,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 				/* Handle "view_bright_lite" */
 				else if (view_bright_lite)
 				{
-					if (graf_new)
+					if (graf_new || graf_shb)
 					{
 						/* Use a dark tile */
 						c += 1;
@@ -775,7 +783,7 @@ void map_info(int y, int x, byte *ap, char *cp)
 			c = f_ptr->x_char;
 
 			/* Special lighting effects (walls only) */
-			if (view_granite_lite &&
+			if (view_granite_lite && !graf_shb &&
 			    (((a == TERM_WHITE) && !use_transparency && (feat >= FEAT_SECRET)) ||
 			     (use_transparency && feat_supports_lighting(feat))))
 			{

@@ -26,5 +26,9 @@ emcc -O2 -fcommon -std=gnu99 -DUSE_WEB -ISRC -w \
 	--preload-file web/stage/lib@/easyband/lib
 
 cp web/index.html rvip/web/rvip-wm.js web/easyband.js "$OUT/"
+# Shockbolt tiles (Angband 4.2 lib/tiles/shockbolt/64x64.png as lossless WebP,
+# from rvip/templates/tactical-angband); mapping lib/user/graf-shb.prf
+# (python3 web/mkgraf-shb.py), drawn nearest-neighbour at cell size
+cp web/tiles.webp "$OUT/"
 rm -rf web/stage
 ls -la "$OUT"

@@ -63,6 +63,8 @@
 	var GUT = 6, TITLE_H = 20, BORDER = 2;
 	var MIN_W = 90, MIN_H = 64, MAIN_MIN_W = 240, MAIN_MIN_H = 160;
 	var TILE_STEPS = [16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64];
+	/* Tile mode has square cells (no big-tile mode in 2.9.3): own zoom steps */
+	var GTILE_STEPS = [8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 64];
 	var FONT_MIN = 8, FONT_MAX = 28;
 	var LAYOUT_FILE = '/easyband/web/web-layout.json';
 	var SPLITS = ['side', 'bottom', 'inv', 'msg'];
@@ -92,10 +94,14 @@
 		var fit = Math.min((W - sideW - GUT - BORDER) / 40, (H - botH - GUT - BORDER) / 24);
 		var tile = TILE_STEPS[0];
 		TILE_STEPS.forEach(function (t) { if (t <= fit) tile = t; });
+		/* Tiles: 80 square cells across the map window */
+		var gfit = Math.min((W - sideW - GUT - BORDER) / 80, (H - botH - GUT - BORDER) / 24);
+		var gtile = GTILE_STEPS[0];
+		GTILE_STEPS.forEach(function (t) { if (t <= gfit) gtile = t; });
 		var f = {};
 		TERMS.forEach(function (d, i) { if (i) f[d.id] = font; });
 		/* auto*: still following the window size (not customised yet) */
-		return { v: 1, tile: tile, font: f, titles: {}, autoSplit: true, autoTile: true,
+		return { v: 1, tile: tile, gtile: gtile, font: f, titles: {}, autoSplit: true, autoTile: true,
 			split: { side: (W - sideW) / W, bottom: (H - botH) / H, inv: 0.46, msg: 0.6 } };
 	}
 
@@ -108,6 +114,7 @@
 					if (typeof s.split[k] === 'number' && s.split[k] > 0 && s.split[k] < 1) d.split[k] = s.split[k];
 				});
 				if (TILE_STEPS.indexOf(s.tile) >= 0) d.tile = s.tile;
+				if (GTILE_STEPS.indexOf(s.gtile) >= 0) d.gtile = s.gtile;
 				d.autoSplit = s.autoSplit === true;
 				d.autoTile = s.autoTile === true;
 				if (d.autoSplit || d.autoTile) followWindow(d);
@@ -148,7 +155,7 @@
 		if (!l.autoSplit && !l.autoTile) return;
 		var d = defaultLayout();
 		if (l.autoSplit) l.split = d.split;
-		if (l.autoTile) l.tile = d.tile;
+		if (l.autoTile) { l.tile = d.tile; l.gtile = d.gtile; }
 	}
 
 
@@ -193,10 +200,12 @@
 		var box = inner(i), cw, ch, font, cols, rows;
 		if (!i) {
 			/* No big-tile mode in 2.9.3: square cells for tiles, half width for text */
-			ch = L.tile; cw = tilesOn() ? L.tile : L.tile / 2;
+			if (tilesOn()) ch = cw = L.gtile;
+			else { ch = L.tile; cw = L.tile / 2; }
 			font = Math.floor(Math.min(ch * 0.8, cw / 0.62));
-			cols = clamp(Math.floor(box.w / cw), 80, 255);
-			rows = clamp(Math.floor(box.h / ch), 24, 255);
+			/* 2.9.3 draws a fixed 80x24 screen (SCREEN_HGT/WID panels) */
+			cols = 80;
+			rows = 24;
 		} else {
 			font = L.font[TERMS[i].id];
 			cw = Math.ceil(measure(font)); ch = Math.round(font * 1.3);
@@ -278,14 +287,15 @@
 
 	/* Zoom: main window tile size, sub window font size */
 	function zoomMain(dir) {
-		var i = TILE_STEPS.indexOf(L.tile);
-		var n = clamp(i + dir, 0, TILE_STEPS.length - 1);
+		var g = tilesOn(), st = g ? GTILE_STEPS : TILE_STEPS, k = g ? 'gtile' : 'tile';
+		var i = st.indexOf(L[k]);
+		var n = clamp(i + dir, 0, st.length - 1);
 		if (n === i) return;
-		L.tile = TILE_STEPS[n];
+		L[k] = st[n];
 		L.autoTile = false;
 		scheduleLayout();
 		saveLayout();
-		status('Map tiles: ' + L.tile + ' px');
+		status('Map cells: ' + L[k] + ' px');
 		clearTimeout(zoomMsgTimer);
 		zoomMsgTimer = setTimeout(function () { status(''); }, 1200);
 	}
