@@ -3622,6 +3622,9 @@ void display_equip(void)
  *
  * Hack -- do not display "trailing" empty slots
  */
+/* RVIP: column of the last inventory/equipment list */
+int show_list_col = 0;
+
 void show_inven(void)
 {
 	int i, j, k, l, z = 0;
@@ -3698,6 +3701,9 @@ void show_inven(void)
 
 	/* Find the column to start in */
 	col = (len > 76) ? 0 : (79 - len);
+
+	/* RVIP: where the item menu draws its cursor */
+	show_list_col = col;
 
 	/* Output each entry */
 	for (j = 0; j < k; j++)
@@ -3816,6 +3822,9 @@ void show_equip(void)
 
 	/* Hack -- Find a column to start in */
 	col = (len > 76) ? 0 : (79 - len);
+
+	/* RVIP: where the item menu draws its cursor */
+	show_list_col = col;
 
 	/* Output each entry */
 	for (j = 0; j < k; j++)
@@ -4319,6 +4328,27 @@ bool get_item(int *cp, cptr pmt, cptr str, int mode)
 	}
 
 #endif /* ALLOW_REPEAT */
+
+	/* RVIP: the item chosen in the item menu (cmd3.c inven_screen()) */
+	if (get_item_preselect >= 0)
+	{
+		int it = get_item_preselect;
+
+		get_item_preselect = -1;
+
+		if ((((it < INVEN_PACK) && use_inven) || ((it >= INVEN_WIELD) && use_equip)) &&
+		    get_item_okay(it))
+		{
+			item_tester_tval = 0;
+			item_tester_hook = NULL;
+			p_ptr->command_see = FALSE;
+			*cp = it;
+#ifdef ALLOW_REPEAT
+			repeat_push(it);
+#endif /* ALLOW_REPEAT */
+			return (TRUE);
+		}
+	}
 
 
 	/* Paranoia XXX XXX XXX */

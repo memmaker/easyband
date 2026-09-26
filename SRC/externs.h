@@ -371,6 +371,17 @@ extern void explore_step(void);
 extern void do_cmd_explore(void);
 extern void explore_to_stairs(bool up);
 
+/* util.c (RVIP menus) */
+extern bool command_new_raw;
+extern int get_item_preselect;
+extern char inven_reopen;
+extern char cmd_menu(int mode);
+
+/* cmd3.c (RVIP item menus) */
+extern int show_list_col;
+extern void inven_screen(bool equip);
+extern bool inven_may_reopen(void);
+
 /* cmd5.c */
 extern void brand_weaponx(void);
 extern void do_cmd_browse(void);

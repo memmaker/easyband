@@ -20,6 +20,9 @@
  */
 void do_cmd_inven(void)
 {
+	/* RVIP: item menu (the stores keep the plain list) */
+	if (!character_icky) { inven_screen(FALSE); return; }
+
 	/* Hack -- Start in "inventory" mode */
 	p_ptr->command_wrk = (USE_INVEN);
 
@@ -66,6 +69,9 @@ void do_cmd_inven(void)
  */
 void do_cmd_equip(void)
 {
+	/* RVIP: item menu (the stores keep the plain list) */
+	if (!character_icky) { inven_screen(TRUE); return; }
+
 	/* Hack -- Start in "equipment" mode */
 	p_ptr->command_wrk = (USE_EQUIP);
 
@@ -1553,4 +1559,360 @@ void do_cmd_query_symbol(void)
 
 
         return;
+}
+
+
+
+/*
+ * RVIP item menus (the Zangband web port's inven_screen(), ported).
+ *
+ * 'i' / 'e' show the list with a cursor.  A letter runs the item's main
+ * action, Shift+letter drops, Ctrl+letter observes; 2/8 or the arrows move
+ * the cursor, Enter/Space/5 open the item's action menu, + - * run
+ * main/drop/observe on the cursor item, 4/6 or '/' switch lists,
+ * Escape/0/. close; any other key is a normal command (as before).
+ *
+ * An action runs through its own command (key queue + preselect): the key
+ * goes into p_ptr->command_new (past the keymaps) and get_item() takes the
+ * preselected item if that command accepts it, else it asks as usual.
+ */
+typedef struct inv_action inv_action;
+struct inv_action
+{
+	char key;		/* underlying command */
+	cptr name;
+	byte where;		/* 1 pack, 2 equipment, 3 both */
+	bool (*ok)(const object_type *o_ptr);
+};
+
+static bool inv_ok_any(const object_type *o_ptr) { (void)o_ptr; return (TRUE); }
+static bool inv_ok_food(const object_type *o_ptr) { return (o_ptr->tval == TV_FOOD); }
+static bool inv_ok_potion(const object_type *o_ptr) { return (o_ptr->tval == TV_POTION); }
+static bool inv_ok_scroll(const object_type *o_ptr) { return (o_ptr->tval == TV_SCROLL); }
+static bool inv_ok_wand(const object_type *o_ptr) { return (o_ptr->tval == TV_WAND); }
+static bool inv_ok_staff(const object_type *o_ptr) { return (o_ptr->tval == TV_STAFF); }
+static bool inv_ok_rod(const object_type *o_ptr) { return (o_ptr->tval == TV_ROD); }
+static bool inv_ok_fuel(const object_type *o_ptr)
+{
+	return ((o_ptr->tval == TV_FLASK) || (o_ptr->tval == TV_LITE));
+}
+static bool inv_ok_wear(const object_type *o_ptr)
+{
+	return (wield_slot((object_type *)o_ptr) >= INVEN_WIELD);
+}
+static bool inv_ok_activate(const object_type *o_ptr)
+{
+	u32b f1, f2, f3;
+
+	if (!object_known_p(o_ptr)) return (FALSE);
+	object_flags((object_type *)o_ptr, &f1, &f2, &f3);
+	return ((f3 & (TR3_ACTIVATE)) ? TRUE : FALSE);
+}
+static bool inv_ok_ammo(const object_type *o_ptr)
+{
+	return (p_ptr->ammo_tval && (o_ptr->tval == p_ptr->ammo_tval));
+}
+static bool inv_ok_book(const object_type *o_ptr)
+{
+	return (mp_ptr->spell_book && (o_ptr->tval == mp_ptr->spell_book));
+}
+static bool inv_ok_note(const object_type *o_ptr) { return (o_ptr->note ? TRUE : FALSE); }
+
+/* In this order: the first that fits is the item's main action */
+static const inv_action inv_act[] =
+{
+	{ 'E', "Eat", 1, inv_ok_food },
+	{ 'q', "Quaff", 1, inv_ok_potion },
+	{ 'r', "Read", 1, inv_ok_scroll },
+	{ 'a', "Aim", 1, inv_ok_wand },
+	{ 'u', "Use", 1, inv_ok_staff },
+	{ 'z', "Zap", 1, inv_ok_rod },
+	{ 'A', "Activate", 2, inv_ok_activate },
+	{ 'f', "Fire", 1, inv_ok_ammo },
+	{ 'm', "Cast from", 1, inv_ok_book },
+	{ 'b', "Browse", 1, inv_ok_book },
+	{ 'w', "Wear/Wield", 1, inv_ok_wear },
+	{ 't', "Take off", 2, inv_ok_any },
+	{ 'F', "Refuel with", 1, inv_ok_fuel },
+	{ 'v', "Throw", 1, inv_ok_any },
+	{ 'd', "Drop", 3, inv_ok_any },
+	{ 'k', "Destroy", 1, inv_ok_any },
+	{ 'I', "Observe", 3, inv_ok_any },
+	{ '{', "Inscribe", 3, inv_ok_any },
+	{ '}', "Uninscribe", 3, inv_ok_note },
+	{ 0, NULL, 0, NULL }
+};
+
+/* Does action i fit the item in slot "item"? */
+static bool inv_fits(int i, int item)
+{
+	object_type *o_ptr = &inventory[item];
+	int where = (item >= INVEN_WIELD) ? 2 : 1;
+
+	if (!o_ptr->k_idx) return (FALSE);
+	if (!(inv_act[i].where & where)) return (FALSE);
+
+	/* Priests pray, others cast */
+	if ((inv_act[i].key == 'm') && (mp_ptr->spell_book == TV_PRAYER_BOOK))
+		return (FALSE);
+	if (inv_act[i].key == 'm') return (inv_ok_book(o_ptr));
+
+	return ((*inv_act[i].ok)(o_ptr));
+}
+
+static char inv_key(int i)
+{
+	/* Prayers are 'p' */
+	if ((inv_act[i].key == 'm') && (mp_ptr->spell_book == TV_PRAYER_BOOK)) return ('p');
+	return (inv_act[i].key);
+}
+
+/* Queue action i on slot "item", reopen the list afterwards */
+static void inv_run(int i, int item, bool equip)
+{
+	get_item_preselect = item;
+	p_ptr->command_new = inv_key(i);
+	command_new_raw = TRUE;
+	inven_reopen = equip ? 'e' : 'i';
+}
+
+static int inv_find(char key)
+{
+	int i;
+
+	for (i = 0; inv_act[i].key; i++) if (inv_act[i].key == key) return (i);
+	return (-1);
+}
+
+/* Main action: the first that fits */
+static int inv_main(int item)
+{
+	int i;
+
+	for (i = 0; inv_act[i].key; i++) if (inv_fits(i, item)) return (i);
+	return (-1);
+}
+
+/* The list is reopened after an action unless a monster is in view */
+bool inven_may_reopen(void)
+{
+	int i;
+
+	for (i = 1; i < m_max; i++)
+	{
+		monster_type *m_ptr = &m_list[i];
+
+		if (!m_ptr->r_idx || !m_ptr->ml) continue;
+		if (r_info[m_ptr->r_idx].flags1 & (RF1_NEVER_MOVE)) continue;
+		if (player_has_los_bold(m_ptr->fy, m_ptr->fx)) return (FALSE);
+	}
+	return (TRUE);
+}
+
+/* Action menu for one item, boxed over its line; returns the action or -1 */
+static int inv_action_menu(int item, int row)
+{
+	int list[32], n = 0, i, cur = 0, w = 20;
+	int x = show_list_col + 6, y = row;
+
+	for (i = 0; inv_act[i].key; i++)
+		if (inv_fits(i, item)) list[n++] = i;
+	if (!n) return (-1);
+
+	if (y + n + 2 > Term->hgt) y = Term->hgt - n - 2;
+	if (x + w > Term->wid) x = Term->wid - w;
+
+	while (1)
+	{
+		char ch, line[32];
+
+		for (i = 0; i < w; i++) line[i] = (i == 0 || i == w - 1) ? '+' : '-';
+		line[w] = 0;
+		Term_putstr(x, y, w, TERM_L_BLUE, line);
+		Term_putstr(x, y + n + 1, w, TERM_L_BLUE, line);
+		for (i = 0; i < n; i++)
+		{
+			byte a = (i == cur) ? TERM_L_GREEN : TERM_WHITE;
+			char kb[4];
+
+			sprintf(kb, "%c", inv_key(list[i]));
+			Term_putstr(x, y + 1 + i, w, TERM_L_BLUE, "|                  |");
+			Term_putstr(x + 1, y + 1 + i, 1, a, (i == cur) ? ">" : " ");
+			Term_putstr(x + 3, y + 1 + i, -1, TERM_L_BLUE, kb);
+			Term_putstr(x + 6, y + 1 + i, -1, a, inv_act[list[i]].name);
+		}
+		Term_gotoxy(x + 1, y + 1 + cur);
+
+		inkey_base = TRUE;
+		ch = inkey();
+
+		/* Arrow keys arrive as X11 keysym triggers (macros are off here) */
+		if (ch == 31)
+		{
+			char buf[32];
+			int k = 0;
+
+			while (k < 31)
+			{
+				inkey_base = TRUE;
+				ch = inkey();
+				if ((ch == '\r') || !ch) break;
+				buf[k++] = ch;
+			}
+			buf[k] = 0;
+			ch = 0;
+			if (strstr(buf, "FF52") || strstr(buf, "FFB8")) ch = '8';
+			if (strstr(buf, "FF54") || strstr(buf, "FFB2")) ch = '2';
+			if (strstr(buf, "FF51") || strstr(buf, "FFB4")) ch = '4';
+			if (strstr(buf, "FF53") || strstr(buf, "FFB6")) ch = '6';
+		}
+
+		if ((ch == ESCAPE) || (ch == '4') || (ch == '0')) return (-1);
+		if (ch == '8') { cur = (cur + n - 1) % n; continue; }
+		if (ch == '2') { cur = (cur + 1) % n; continue; }
+		if ((ch == '\r') || (ch == '\n') || (ch == ' ') || (ch == '5') || (ch == '6'))
+			return (list[cur]);
+		for (i = 0; i < n; i++)
+			if (ch && (inv_key(list[i]) == ch)) return (list[i]);
+	}
+}
+
+void inven_screen(bool equip)
+{
+	int cur = 0;
+
+	screen_save();
+
+	while (1)
+	{
+		int n, item, i;
+		char ch;
+
+		/* Rows of the list */
+		item_tester_full = TRUE;
+		if (equip)
+		{
+			show_equip();
+			n = INVEN_TOTAL - INVEN_WIELD;
+		}
+		else
+		{
+			show_inven();
+			for (n = 0, i = 0; i < INVEN_PACK; i++) if (inventory[i].k_idx) n = i + 1;
+			if (!n) n = 1;
+		}
+		item_tester_full = FALSE;
+
+		if (cur >= n) cur = n - 1;
+		if (cur < 0) cur = 0;
+		item = equip ? INVEN_WIELD + cur : cur;
+
+		/* Cursor left of the list */
+		Term_putstr(show_list_col >= 2 ? show_list_col - 2 : 0, cur + 1, 1, TERM_L_GREEN, ">");
+
+		prt(equip ? "(Equipment) Letter: use, Shift: drop, Enter: menu, 4/6: pack, Esc" :
+		            "(Inventory) Letter: use, Shift: drop, Enter: menu, 4/6: gear, Esc", 0, 0);
+
+		inkey_base = TRUE;
+		ch = inkey();
+
+		/* Arrow keys: X11 keysym triggers (macros are off here) */
+		if (ch == 31)
+		{
+			char buf[32];
+			int k = 0;
+
+			while (k < 31)
+			{
+				inkey_base = TRUE;
+				ch = inkey();
+				if ((ch == '\r') || !ch) break;
+				buf[k++] = ch;
+			}
+			buf[k] = 0;
+			ch = 0;
+			if (strstr(buf, "FF52") || strstr(buf, "FFB8")) ch = '8';
+			if (strstr(buf, "FF54") || strstr(buf, "FFB2")) ch = '2';
+			if (strstr(buf, "FF51") || strstr(buf, "FFB4")) ch = '4';
+			if (strstr(buf, "FF53") || strstr(buf, "FFB6")) ch = '6';
+			if (strstr(buf, "FF8D")) ch = '\r';
+			if (!ch) continue;
+		}
+
+		screen_load();
+		screen_save();
+
+		if ((ch == ESCAPE) || (ch == '0') || (ch == '.')) break;
+		if (ch == '8') { cur = (cur + n - 1) % n; continue; }
+		if (ch == '2') { cur = (cur + 1) % n; continue; }
+		if ((ch == '4') || (ch == '6') || (ch == '/')) { equip = !equip; cur = 0; continue; }
+
+		/* Action menu on the cursor item */
+		if ((ch == '\r') || (ch == '\n') || (ch == ' ') || (ch == '5'))
+		{
+			int a;
+
+			if (!inventory[item].k_idx) continue;
+
+			/* Draw the list again under the box */
+			item_tester_full = TRUE;
+			if (equip) show_equip(); else show_inven();
+			item_tester_full = FALSE;
+
+			a = inv_action_menu(item, cur + 1);
+			if (a < 0) continue;
+			inv_run(a, item, equip);
+			break;
+		}
+
+		/* Main / drop / observe on the cursor item */
+		if ((ch == '+') || (ch == '-') || (ch == '*'))
+		{
+			int a = (ch == '+') ? inv_main(item) : inv_find((ch == '-') ? 'd' : 'I');
+
+			if ((a < 0) || !inv_fits(a, item)) { bell("You cannot do that."); continue; }
+			inv_run(a, item, equip);
+			break;
+		}
+
+		/* Letter: main action; Shift: drop; Ctrl: observe */
+		{
+			int it = -1, a = -1;
+
+			if ((ch >= 'a') && (ch <= 'z'))
+			{
+				it = equip ? label_to_equip(ch) : label_to_inven(ch);
+				if (it >= 0) a = inv_main(it);
+			}
+			else if ((ch >= 'A') && (ch <= 'Z'))
+			{
+				it = equip ? label_to_equip(ch - 'A' + 'a') : label_to_inven(ch - 'A' + 'a');
+				a = inv_find('d');
+			}
+			else if ((ch >= 1) && (ch <= 26) && (ch != '\r') && (ch != '\n') && (ch != '\t') && (ch != 8))
+			{
+				it = equip ? label_to_equip(ch - 1 + 'a') : label_to_inven(ch - 1 + 'a');
+				a = inv_find('I');
+			}
+
+			if ((it >= 0) && (a >= 0) && inv_fits(a, it))
+			{
+				inv_run(a, it, equip);
+				break;
+			}
+
+			/* Anything else: a normal command, as the original list did */
+			if (it < 0)
+			{
+				p_ptr->command_new = ch;
+				p_ptr->command_see = TRUE;
+				p_ptr->command_wrk = equip ? (USE_EQUIP) : (USE_INVEN);
+				break;
+			}
+
+			bell("You cannot do that.");
+		}
+	}
+
+	screen_load();
 }

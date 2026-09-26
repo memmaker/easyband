@@ -3010,6 +3010,15 @@ static char request_command_buffer[256];
  *
  * Note that "p_ptr->command_new" may not work any more.  XXX XXX XXX
  */
+/*
+ * RVIP menus: a command queued in p_ptr->command_new by a menu skips the
+ * keymaps; the item menu preselects the item for the command's get_item()
+ * and reopens its list afterwards.
+ */
+bool command_new_raw = FALSE;
+int get_item_preselect = -1;
+char inven_reopen = 0;
+
 void request_command(bool shopping)
 {
 	int i;
@@ -3019,6 +3028,8 @@ void request_command(bool shopping)
 	int mode;
 
 	cptr act;
+
+	bool raw = FALSE;
 
 
 	/* Roguelike */
@@ -3036,6 +3047,20 @@ void request_command(bool shopping)
 
 	/* No command yet */
 	p_ptr->command_cmd = 0;
+
+	/* RVIP: a preselected item is only for the command queued with it */
+	if (!p_ptr->command_new) get_item_preselect = -1;
+
+	/* RVIP: reopen the item list after an action chosen there */
+	if (inven_reopen && !p_ptr->command_new && !shopping)
+	{
+		if (inven_may_reopen())
+		{
+			p_ptr->command_new = inven_reopen;
+			command_new_raw = TRUE;
+		}
+		inven_reopen = 0;
+	}
 
 	/* No "argument" yet */
 	p_ptr->command_arg = 0;
@@ -3058,6 +3083,10 @@ void request_command(bool shopping)
 
 			/* Forget it */
 			p_ptr->command_new = 0;
+
+			/* RVIP: queued by a menu, runs past the keymaps */
+			raw = command_new_raw;
+			command_new_raw = FALSE;
 		}
 
 		/* Get a keypress in "command" mode */
@@ -3071,6 +3100,14 @@ void request_command(bool shopping)
 
 			/* Get a command */
 			ch = inkey();
+
+			/* RVIP: Enter opens the command menu (unless a keymap uses it) */
+			if (((ch == '\r') || (ch == '\n')) && !shopping && !keymap_act[mode][(byte)ch])
+			{
+				ch = cmd_menu(mode);
+				if (!ch) continue;
+				raw = TRUE;
+			}
 		}
 
 		/* Clear top line */
@@ -3193,8 +3230,8 @@ void request_command(bool shopping)
 		/* Look up applicable keymap */
 		act = keymap_act[mode][(byte)(ch)];
 
-		/* Apply keymap if not inside a keymap already */
-		if (act && !inkey_next)
+		/* Apply keymap if not inside a keymap already (or chosen in a menu) */
+		if (act && !inkey_next && !raw)
 		{
 			/* Install the keymap (limited buffer size) */
 			strnfmt(request_command_buffer, 256, "%s", act);
@@ -3611,4 +3648,277 @@ extern void dlog(cptr fmt, ...)
    }
 
    va_end(ap);
+}
+
+
+
+/*
+ * RVIP: command menu on Enter (the Zangband web port's cmd_menu(), ported).
+ *
+ * Two boxes: the command groups (as lib/help/command.txt groups them), then
+ * the group's commands with the key of the current keyset.  2/8 or the
+ * arrow keys move, Enter/Space/6 choose, a letter or the command key picks
+ * directly, Escape/4 goes back.  The chosen *underlying* command is returned
+ * and request_command() runs it past the keymaps.
+ */
+typedef struct cmd_menu_item cmd_menu_item;
+struct cmd_menu_item
+{
+	char key;
+	cptr name;
+};
+
+static const cmd_menu_item cmd_menu_inven[] =
+{
+	{ 'i', "Inventory list" }, { 'e', "Equipment list" }, { 'w', "Wear/Wield" },
+	{ 't', "Take off" }, { 'd', "Drop an item" }, { 'k', "Destroy an item" },
+	{ 'I', "Observe an item" }, { '{', "Inscribe an object" },
+	{ '}', "Uninscribe an object" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_move[] =
+{
+	{ 'H', "Auto-explore" }, { '<', "Go up staircase (walks there)" },
+	{ '>', "Go down staircase (walks there)" }, { ';', "Walk" },
+	{ '-', "Walk (flip pickup)" }, { '.', "Run" }, { '_', "Enter a store" },
+	{ 0, NULL }
+};
+static const cmd_menu_item cmd_menu_rest[] =
+{
+	{ ',', "Stay still" }, { 'g', "Pick up / stay (flip pickup)" }, { 'R', "Rest" },
+	{ 's', "Search" }, { 'S', "Toggle search mode" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_alter[] =
+{
+	{ 'T', "Tunnel" }, { 'o', "Open a door or chest" }, { 'c', "Close a door" },
+	{ 'j', "Jam a door" }, { 'B', "Bash a door" }, { 'D', "Disarm a trap or chest" },
+	{ '+', "Alter" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_magic[] =
+{
+	{ 'b', "Browse a book" }, { 'G', "Gain a spell or prayer" }, { 'm', "Cast a spell" },
+	{ 'p', "Pray a prayer" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_object[] =
+{
+	{ 'E', "Eat some food" }, { 'q', "Quaff a potion" }, { 'r', "Read a scroll" },
+	{ 'F', "Fuel your lantern/torch" }, { 'A', "Activate an artifact" },
+	{ 'a', "Aim a wand" }, { 'u', "Use a staff" }, { 'z', "Zap a rod" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_missile[] =
+{
+	{ 'f', "Fire an item" }, { 'v', "Throw an item" }, { '*', "Targeting mode" },
+	{ 0, NULL }
+};
+static const cmd_menu_item cmd_menu_look[] =
+{
+	{ 'l', "Look around" }, { 'M', "Full screen map" }, { 'L', "Locate player on map" },
+	{ 'C', "Character description" }, { '~', "Check knowledge" },
+	{ '/', "Identify symbol" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_msg[] =
+{
+	{ KTRL('P'), "View previous messages" }, { KTRL('F'), "Repeat level feeling" },
+	{ ':', "Take notes" }, { KTRL('T'), "Game time" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_game[] =
+{
+	{ KTRL('S'), "Save" }, { KTRL('X'), "Save and quit" }, { 'Q', "Quit (commit suicide)" },
+	{ '=', "Options" }, { '@', "Macros" }, { '%', "Visuals" }, { '&', "Colors" },
+	{ '?', "Help" }, { 'V', "Game version" }, { KTRL('R'), "Redraw screen" },
+	{ '(', "Load screen dump" }, { ')', "Save screen dump" }, { 0, NULL }
+};
+static const cmd_menu_item cmd_menu_easy[] =
+{
+	{ 'J', "Cure all (Easyband)" }, { 'K', "Identify fully (Easyband)" }, { 0, NULL }
+};
+
+static const struct { cptr name; const cmd_menu_item *list; } cmd_menu_groups[] =
+{
+	{ "Inventory", cmd_menu_inven },
+	{ "Movement and stairs", cmd_menu_move },
+	{ "Resting and searching", cmd_menu_rest },
+	{ "Doors, traps, digging", cmd_menu_alter },
+	{ "Spells and prayers", cmd_menu_magic },
+	{ "Using objects", cmd_menu_object },
+	{ "Missiles and throwing", cmd_menu_missile },
+	{ "Looking and knowledge", cmd_menu_look },
+	{ "Messages and time", cmd_menu_msg },
+	{ "Game and options", cmd_menu_game },
+	{ "Easyband extras", cmd_menu_easy },
+	{ NULL, NULL }
+};
+
+
+/* The key for an underlying command in keymap mode "mode" (0 = none) */
+static char command_key(int mode, char cmd)
+{
+	int k;
+	char buf[2];
+
+	buf[0] = cmd; buf[1] = 0;
+
+	/* A keymap that runs exactly this command */
+	for (k = 1; k < 256; k++)
+		if (keymap_act[mode][k] && streq(keymap_act[mode][k], buf)) return ((char)k);
+
+	/* The key itself, unless a keymap takes it over */
+	if (!keymap_act[mode][(byte)cmd]) return (cmd);
+
+	return (0);
+}
+
+/* Printable name of a key ("^P", "x") */
+static void key_name(char *buf, char k)
+{
+	if (!k) strcpy(buf, "");
+	else if ((byte)k < 32) sprintf(buf, "^%c", k + 64);
+	else sprintf(buf, "%c", k);
+}
+
+/* A box of h rows by w columns at (y, x), blank inside */
+static void box_draw(int y, int x, int h, int w)
+{
+	int i;
+	char line[256];
+
+	for (i = 0; i < w; i++) line[i] = (i == 0 || i == w - 1) ? '+' : '-';
+	line[w] = 0;
+	Term_putstr(x, y, w, TERM_L_BLUE, line);
+	Term_putstr(x, y + h - 1, w, TERM_L_BLUE, line);
+
+	for (i = 0; i < w; i++) line[i] = (i == 0 || i == w - 1) ? '|' : ' ';
+	for (i = 1; i < h - 1; i++) Term_putstr(x, y + i, w, TERM_L_BLUE, line);
+}
+
+/*
+ * A menu key: 2/4/6/8 for arrows and the keypad (X11 keysym macros arrive
+ * as ^_ ... \r because macros are off here), else the key.
+ */
+static char menu_inkey(void)
+{
+	char ch, buf[32];
+	int n = 0;
+
+	inkey_base = TRUE;
+	ch = inkey();
+	if (ch != 31) return (ch);
+
+	/* Read the rest of the trigger */
+	while (n < 31)
+	{
+		inkey_base = TRUE;
+		ch = inkey();
+		if ((ch == '\r') || !ch) break;
+		buf[n++] = ch;
+	}
+	buf[n] = 0;
+
+	if (strstr(buf, "FF52") || strstr(buf, "FFB8") || strstr(buf, "FF97")) return ('8');
+	if (strstr(buf, "FF54") || strstr(buf, "FFB2") || strstr(buf, "FF99")) return ('2');
+	if (strstr(buf, "FF51") || strstr(buf, "FFB4") || strstr(buf, "FF96")) return ('4');
+	if (strstr(buf, "FF53") || strstr(buf, "FFB6") || strstr(buf, "FF98")) return ('6');
+	if (strstr(buf, "FF8D") || strstr(buf, "FFB5")) return ('\r');
+	return (0);
+}
+
+/*
+ * One boxed list at (y, x): items[] with their keys; returns the chosen
+ * index, -1 on Escape/back.  *cur keeps the cursor between calls.
+ */
+static int box_menu(int y, int x, cptr title, int n, cptr *names, char *keys, int *cur)
+{
+	int i, w = strlen(title) + 4;
+	char kb[8];
+
+	for (i = 0; i < n; i++)
+	{
+		int l = strlen(names[i]) + 10;
+		if (l > w) w = l;
+	}
+	if (x + w > Term->wid) x = Term->wid - w;
+	if (x < 0) x = 0;
+	if (y + n + 2 > Term->hgt) y = Term->hgt - n - 2;
+	if (y < 0) y = 0;
+
+	while (1)
+	{
+		char ch;
+
+		box_draw(y, x, n + 2, w);
+		Term_putstr(x + 2, y, -1, TERM_YELLOW, title);
+
+		for (i = 0; i < n; i++)
+		{
+			byte a = (i == *cur) ? TERM_L_GREEN : TERM_WHITE;
+
+			key_name(kb, keys[i]);
+			Term_putstr(x + 1, y + 1 + i, 1, a, (i == *cur) ? ">" : " ");
+			Term_putstr(x + 3, y + 1 + i, -1, TERM_L_BLUE, kb);
+			Term_putstr(x + 7, y + 1 + i, -1, a, names[i]);
+		}
+		Term_gotoxy(x + 1, y + 1 + *cur);
+
+		ch = menu_inkey();
+
+		if ((ch == ESCAPE) || (ch == '4') || (ch == '0')) return (-1);
+		if (ch == '8') { *cur = (*cur + n - 1) % n; continue; }
+		if (ch == '2') { *cur = (*cur + 1) % n; continue; }
+		if ((ch == '\r') || (ch == '\n') || (ch == ' ') || (ch == '6') || (ch == '5'))
+			return (*cur);
+
+		/* A key shown in the list */
+		for (i = 0; i < n; i++)
+			if (ch && (keys[i] == ch)) { *cur = i; return (i); }
+	}
+}
+
+/* The Enter menu; returns the underlying command, 0 if cancelled */
+char cmd_menu(int mode)
+{
+	static int g_cur = 0;
+	int g, n;
+	cptr names[32];
+	char keys[32];
+	char res = 0;
+
+	screen_save();
+
+	for (n = 0; cmd_menu_groups[n].name; n++)
+	{
+		names[n] = cmd_menu_groups[n].name;
+		keys[n] = I2A(n);
+	}
+
+	while (1)
+	{
+		const cmd_menu_item *list;
+		int c_cur = 0, c, i;
+		char under[32];
+
+		g = box_menu(1, 13, "Commands (Esc closes)", n, names, keys, &g_cur);
+		if (g < 0) break;
+
+		list = cmd_menu_groups[g].list;
+		{
+			cptr cn[32];
+			char ck[32];
+
+			for (i = 0; list[i].name; i++)
+			{
+				cn[i] = list[i].name;
+				ck[i] = command_key(mode, list[i].key);
+				under[i] = list[i].key;
+			}
+
+			c = box_menu(2, 40, cmd_menu_groups[g].name, i, cn, ck, &c_cur);
+		}
+
+		screen_load();
+		screen_save();
+
+		if (c >= 0) { res = under[c]; break; }
+	}
+
+	screen_load();
+	return (res);
 }

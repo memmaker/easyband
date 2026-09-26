@@ -185,6 +185,60 @@ count coverage of the 16x16 set against every `N:` entry of
   (`object1.c`), `get_item()` (`object1.c`), `do_cmd_inven()/equip()`
   (`cmd3.c`). Port Zangband's `cmd_menu()` / `inven_screen()` (A3b/A3c).
 
+### Stage 3 (Enter menu + inventory): done 2026-09-26 (cloud)
+- **Enter menu**: `cmd_menu()` at the end of `SRC/util.c` (Zangband's
+  design): 11 groups in `cmd_menu_groups[]` (as `lib/help/command.txt`
+  groups them, plus "Easyband extras": `J` cure all, `K` identify fully),
+  incl. `H` explore and the `<`/`>` stair walks. Opened in
+  `request_command()` right after `inkey()` when the key is `\r`/`\n`, not
+  shopping, and `!keymap_act[mode][key]`. Two boxes (`box_draw()`,
+  `box_menu()`), keys shown for the current keyset (`command_key()`
+  reverse-looks-up `keymap_act`); 2/8/arrows move, Enter/Space/5/6 choose,
+  the key chooses, Esc/4/0 back. Arrow keys arrive as raw X11 keysym
+  triggers because the menu reads with `inkey_base` (`menu_inkey()` parses
+  `^_..FF52\r`). The chosen underlying command runs past the keymaps
+  (`raw` in `request_command()`).
+- **Item menus**: `inven_screen()` at the end of `SRC/cmd3.c`;
+  `do_cmd_inven()/do_cmd_equip()` call it (not in stores: `character_icky`
+  keeps the plain list there). Cursor `>` left of the list (`show_list_col`,
+  set by `show_inven()/show_equip()` in `object1.c`). Letter = main action,
+  Shift+letter = drop, Ctrl+letter = observe, 2/8/arrows move, Enter/Space/5
+  = action box (`inv_action_menu()`), `+ - *` = main/drop/observe, 4/6 or
+  `/` = other list, Esc/0/. close, anything else = normal command (as
+  before).
+- **How item actions run (key queue + preselect)**: `inv_act[]` = {key,
+  name, pack/equipment, test} in main-action order (Eat, Quaff, Read, Aim,
+  Use, Zap, Activate, Fire, Cast/Pray, Browse, Wear, Take off, Refuel,
+  Throw, Drop, Destroy, Observe, Inscribe, Uninscribe). `inv_run()` sets
+  `get_item_preselect` (slot index), `p_ptr->command_new = key`,
+  `command_new_raw` (no keymap) and `inven_reopen` = `i`/`e`.
+  `get_item()` (`object1.c`) returns the preselected slot if the mode and
+  `get_item_okay()` accept it, else asks as usual. `request_command()`
+  clears the preselect when no command is queued and queues the reopen
+  when `inven_may_reopen()` (no moving monster in view).
+- Tested (Playwright, `web/tests/stage3.js`, 11 checks pass): menu lists all
+  groups, movement group shows `H`, cursor wraps (Up Up → Easyband extras),
+  Esc closes, menu runs `V` (version message); `i` list with cursor, food
+  letter eats (7→6 rations), list reopens, Enter opens the action box
+  (Eat/Throw/Drop/Destroy/Observe/Inscribe), `I` observes, torch letter
+  wields it, `e` shows it, Shift+letter drops it. Screens
+  `web/shots/stage3-*.png`.
+- ASan (native, pty, random keys weighted to `H < > Enter i e`, 4 seeds x
+  (2500 new + 2000 restored)): clean.
+- Open problems: roguelike keyset not tested in the browser (menu shows
+  keys via `command_key()`); no mouse; Ctrl+H/Tab in the list are
+  ignored (not letters).
+
+### Next: stage 4 (tiles)
+- Decision from stage 1: **Shockbolt** (own 16x16 = 87.8%).
+- Generator: port `rvip/templates/zangband/web/mkgraf-shb.py` to 2.9.3
+  data (r_info unnumbered, 64 fixed features `FEAT_*` in `defines.h`, no
+  t_info/fields; flavours are `S:0x80..0xFF` as in Zangband; bolts
+  `S:0x30..0x7F` from `spells1.c bolt_pict()`), write `lib/user/graf-shb.prf`,
+  loaded by `graf-x11.prf` `?:[EQU $GRAF shb]`. `main-web.c` already sets
+  `GRAPHICS_SHOCKBOLT` + `ANGBAND_GRAF = "shb"`; no big-tile mode: the page
+  uses square map cells in tile mode (`termShape()`).
+
 ### Source restored (2026-09-26, Mac side)
 The empty drop was a Mac-side extraction failure (p7zip/7zz cannot decode
 this solid RAR; The Unarchiver `unar` can). The real source is now in the
