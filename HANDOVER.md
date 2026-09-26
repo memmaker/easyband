@@ -504,3 +504,30 @@ recorded in `web/toolchain.sh` is still valid.
   come from GSN2band/GSNband); og block kept the card text.
 
 ### Next: stage 9 (graveyard + leaderboard)
+
+### Stage 9 — graveyard + leaderboard (done)
+- **Hook**: `SRC/files.c` `close_game()`, top of the `is_dead` branch (before
+  `kingly()`/tombstone) → `web_run_end()` in `SRC/main-web.c` (extern in
+  `externs.h`) → `js_beacon` EM_JS → `RvipWM.report` (outbox). Win =
+  `total_winner` (tested first: `kingly()` rewrites `died_from`); quit =
+  `died_from` "Quitting"/"Interrupting"/"Abortion"; else death.
+- **Fields**: g=easyband, ev, name (`op_ptr->full_name`, omitted if empty),
+  killer (`died_from` = `monster_desc(0x88)`, "a "/"an "/"the "/"The "
+  stripped; none for win/quit), depth (`p_ptr->depth`, levels), score
+  (`total_points()`, the Hall of Fame's points), turns (game `turn`), lvl.
+  Nothing missing.
+- **Killer art**: roguelikes-index `4dc6dcb` (`killers/make.py` `easyband()`:
+  r_info names in file order from 0 + `lib/user/graf-shb.prf` →
+  `web/tiles.webp` 64 px → 32 px; 665 PNGs). Same commit: card/og text
+  "676 monsters, many of them from GSN2band" (was "about 130 new monsters");
+  also the shrine og and `web/index.html` og.
+- **Live test** (browser pane, https://ruzzoli.de/roguelikes/easyband/):
+  death (`^A y n` "Great Hell Wyrm", walk into it) → `ev=death&name=Tester&
+  killer=Great%20Hell%20Wyrm&depth=0&score=110&turns=18&lvl=1&id=…&at=…` 204;
+  quit (`Q y @`) → `ev=quit…` 204; outbox `[]` both times. `/easyband/…`
+  IndexedDB deleted on ruzzoli.de. Win path not reachable in a test (same
+  branch, `total_winner` checked first).
+- Browser pane: dispatched `keydown` Escape/Backspace do not reach the game
+  at birth; real keys (`computer key`) do, letters work either way. `^A n`
+  with "Morgoth, Lord of Darkness" places nothing in town (unique); a
+  non-unique works.
