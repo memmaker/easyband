@@ -3678,8 +3678,7 @@ static const cmd_menu_item cmd_menu_inven[] =
 static const cmd_menu_item cmd_menu_move[] =
 {
 	{ 'H', "Auto-explore" }, { '<', "Go up staircase (walks there)" },
-	{ '>', "Go down staircase (walks there)" }, { ';', "Walk" },
-	{ '-', "Walk (flip pickup)" }, { '.', "Run" }, { '_', "Enter a store" },
+	{ '>', "Go down staircase (walks there)" }, { '_', "Enter a store" },
 	{ 0, NULL }
 };
 static const cmd_menu_item cmd_menu_rest[] =
@@ -3735,7 +3734,7 @@ static const cmd_menu_item cmd_menu_easy[] =
 static const struct { cptr name; const cmd_menu_item *list; } cmd_menu_groups[] =
 {
 	{ "Inventory", cmd_menu_inven },
-	{ "Movement and stairs", cmd_menu_move },
+	{ "Explore and stairs", cmd_menu_move },
 	{ "Resting and searching", cmd_menu_rest },
 	{ "Doors, traps, digging", cmd_menu_alter },
 	{ "Spells and prayers", cmd_menu_magic },
