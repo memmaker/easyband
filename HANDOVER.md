@@ -2,7 +2,7 @@
 
 > **Public repo** (this folder, remote `memmaker` = github.com/memmaker/easyband):
 > history without the cloud bundle. The brief below and the `rvip/` bundle it
-> describes live in the private cloud history, **memmaker/easyband-cloud**
+> describes live in the private cloud history, **memmaker/easyband-cloud** (deleted 2026-09-27)
 >. Upstream archive commit: `2c3e95b` here,
 > `00f2a06` there. The Mac build takes shared files from `~/Games/rvip-tools/web`,
 > `~/Games/tactical-angband`, `~/Downloads/Dubtrain Angband Sound Pack v3.1.0`.
@@ -451,7 +451,7 @@ recorded in `web/toolchain.sh` is still valid.
   generated from `make-help.py`'s `GAME`; `make-help.py` now reads it.
 - **Repos**: public **memmaker/easyband** (this folder, remote `memmaker`,
   branch `main`, `git filter-repo --path rvip --path web/shots
-  --invert-paths`); private **memmaker/easyband-cloud** (renamed,
+  --invert-paths`); private **memmaker/easyband-cloud** (deleted 2026-09-27) (renamed,
   GitHub only). README with upstream
   `2c3e95b` and the compare view.
 - **Live**: https://ruzzoli.de/roguelikes/easyband/ (`sh web/build.sh && sh
