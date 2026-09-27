@@ -414,7 +414,7 @@
 		renderTiles();
 	}
 	function tilesOn() { return tilesReady && !(L && L.text); }
-	function renderTiles() { $('btn-tiles').textContent = 'Tiles: ' + (L && L.text ? 'off' : 'on'); }
+	function renderTiles() { $('btn-tiles').textContent = 'Tiles: ' + (tilesOn() ? 'Shockbolt' : 'None'); }
 
 	function renderAudio() {
 		$('chk-sound').checked = !!audio.sound;
@@ -820,6 +820,7 @@
 		tilesReady = ok;
 		tilesDone = true;
 		if (!ok) console.warn('no tile set (tiles.webp); using text');
+		if (L) renderTiles();
 		if (tilesWait) Module.removeRunDependency('tiles');
 	}
 	tiles.onload = function () { tilesFinished(true); };
