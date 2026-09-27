@@ -3065,6 +3065,12 @@ void explore_step(void)
 	int y, x, head = 0, tail = 0, ty = -1, tx = -1, i;
 	s16b msgs;
 
+#ifdef USE_WEB
+	/* Paint every step: show the last one, then wait 40 ms */
+	Term_fresh();
+	Term_xtra(TERM_XTRA_DELAY, 40);
+#endif
+
 	/* Remember what the player sees now */
 	for (y = 0; y < DUNGEON_HGT; y++)
 		for (x = 0; x < DUNGEON_WID; x++)
