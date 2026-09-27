@@ -3073,17 +3073,15 @@ void explore_step(void)
 	/* Objects under the player count as visited */
 	if (cave_o_idx[py][px]) explore_done[py][px] = 1;
 
-	/* Arrived at the stairs: take them */
+	/* Arrived at the stairs: stop; the player presses the key again to take them */
 	if ((mode == EXPLORE_UP) && (cave_feat[py][px] == FEAT_LESS))
 	{
 		auto_explore = 0;
-		do_cmd_go_up();
 		return;
 	}
 	if ((mode == EXPLORE_DOWN) && (cave_feat[py][px] == FEAT_MORE))
 	{
 		auto_explore = 0;
-		do_cmd_go_down();
 		return;
 	}
 
@@ -3227,7 +3225,7 @@ void do_cmd_explore(void)
 	explore_step();
 }
 
-/* '<' / '>' off the stairs: walk to the nearest known one and take it */
+/* '<' / '>' off the stairs: walk to the nearest known one (and stop there) */
 void explore_to_stairs(bool up)
 {
 	auto_explore = up ? EXPLORE_UP : EXPLORE_DOWN;
