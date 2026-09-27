@@ -206,6 +206,8 @@
 			   cells (the game's big tiles, MAP_STEP in defines.h) */
 			ch = tilesOn() ? L.gtile : L.tile; cw = ch / 2;
 			font = Math.floor(Math.min(ch * 0.8, cw / 0.62));
+			/* text mode: cells from the map font, so wide fonts do not overlap */
+			if (!tilesOn()) { cw = Math.ceil(measure(font, 0)); ch = Math.round(font * 1.3); }
 			/* The game fits its map view to the term (web_set_view()); 80x24 at least */
 			cols = clamp(Math.floor(box.w / cw), 80, 255);
 			rows = clamp(Math.floor(box.h / ch), 24, 255);
