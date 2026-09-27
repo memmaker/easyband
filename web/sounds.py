@@ -35,6 +35,10 @@ for e in EVENTS:
     elif e != 'walk':
         files, src = sorted({f for d in MAP.get(e, e).split() for f in pack.get(d, [])}), PACK
         n_pack += 1
+        # DASP names lie: its 'shoot' has the melee swish; firing gets the arrow
+        # samples only, and a melee miss (own samples come first) the swish
+        if e == 'shoot': files = [f for f in files if f != 'plc_miss_swish.wav']
+        if e == 'miss': files = ['plc_miss_swish.wav']
     assert files or e == 'walk', 'no sample for ' + e
     for f in files:
         shutil.copy(os.path.join(src, f), out)
