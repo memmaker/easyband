@@ -1104,7 +1104,7 @@ void move_cursor_relative(int y, int x)
 	if (kx >= (unsigned)(SCREEN_WID)) return;
 
 	/* Location in window */
-	vy = ky + ROW_MAP;
+	vy = ky * MAP_VSTEP + ROW_MAP;
 
 	/* Location in window */
 	vx = kx * MAP_STEP + COL_MAP;
@@ -1124,6 +1124,16 @@ void move_cursor_relative(int y, int x)
  *
  * The main screen will always be at least 24x80 in size.
  */
+/* Big tile (MAP_STEP x MAP_VSTEP cells): the other cells are fillers the page skips */
+static void map_pad(int vx, int vy)
+{
+	int dx, dy;
+
+	for (dy = 0; dy < MAP_VSTEP; dy++)
+		for (dx = 0; dx < MAP_STEP; dx++)
+			if (dx || dy) Term_queue_char(vx + dx, vy + dy, 255, 255, 0, 0);
+}
+
 void print_rel(char c, byte a, int y, int x)
 {
 	unsigned ky, kx;
@@ -1142,7 +1152,7 @@ void print_rel(char c, byte a, int y, int x)
 	if (kx >= (unsigned)(SCREEN_WID)) return;
 
 	/* Location in window */
-	vy = ky + ROW_MAP;
+	vy = ky * MAP_VSTEP + ROW_MAP;
 
 	/* Location in window */
 	vx = kx * MAP_STEP + COL_MAP;
@@ -1275,7 +1285,7 @@ void lite_spot(int y, int x)
 	if (kx >= (unsigned)(SCREEN_WID)) return;
 
 	/* Location in window */
-	vy = ky + ROW_MAP;
+	vy = ky * MAP_VSTEP + ROW_MAP;
 
 	/* Location in window */
 	vx = kx * MAP_STEP + COL_MAP;
@@ -1289,7 +1299,7 @@ void lite_spot(int y, int x)
 	Term_queue_char(vx, vy, a, c, ta, tc);
 
 	/* Big tile: the second cell is a filler the page skips */
-	if (MAP_STEP == 2) Term_queue_char(vx + 1, vy, 255, 255, 0, 0);
+	map_pad(vx, vy);
 
 #else /* USE_TRANSPARENCY */
 
@@ -1327,11 +1337,11 @@ void prt_map(void)
 	int ty, tx;
 
 	/* Assume screen */
-	ty = ROW_MAP + SCREEN_HGT;
+	ty = ROW_MAP + SCREEN_HGT * MAP_VSTEP;
 	tx = COL_MAP + SCREEN_WID * MAP_STEP;
 
 	/* Dump the map */
-	for (y = p_ptr->wy, vy = ROW_MAP; vy < ty; vy++, y++)
+	for (y = p_ptr->wy, vy = ROW_MAP; vy < ty; vy += MAP_VSTEP, y++)
 	{
 		for (x = p_ptr->wx, vx = COL_MAP; vx < tx; vx += MAP_STEP, x++)
 		{
@@ -1345,7 +1355,7 @@ void prt_map(void)
 			Term_queue_char(vx, vy, a, c, ta, tc);
 
 			/* Big tile: the second cell is a filler the page skips */
-			if (MAP_STEP == 2) Term_queue_char(vx + 1, vy, 255, 255, 0, 0);
+			map_pad(vx, vy);
 
 #else /* USE_TRANSPARENCY */
 

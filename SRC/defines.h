@@ -106,10 +106,12 @@
 # define SCREEN_HGT	web_view_hgt
 # define SCREEN_WID	web_view_wid
 # define MAP_STEP	web_map_step
+# define MAP_VSTEP	web_map_vstep
 #else
 # define SCREEN_HGT	SCREEN_HGT_STD
 # define SCREEN_WID	SCREEN_WID_STD
 # define MAP_STEP	1
+# define MAP_VSTEP	1
 #endif
 
 /* Detection area: a fixed-size screen centred on the view */

@@ -64,6 +64,17 @@ EM_JS(int, js_tiles_wanted, (void), {
 	return Module.qb.tilesWanted();
 });
 
+/* Map zoom in tile mode (1..4): a grid is 2m x m cells */
+static int web_mult = 1;
+
+EM_JS(int, js_tile_mult, (void), {
+	return Module.qb.tileMult();
+});
+
+EM_JS(void, js_mult_applied, (int m), {
+	Module.qb.multApplied(m);
+});
+
 /* -1: no change, else the new Tiles setting */
 EM_JS(int, js_tiles_switch, (void), {
 	return Module.qb.tilesSwitch();
@@ -261,6 +272,14 @@ static int web_pump(void)
 			web_switch_graphics(on);
 			got = 1;
 		}
+		else if (js_tile_mult() != web_mult)
+		{
+			web_mult = js_tile_mult();
+			js_mult_applied(web_mult);
+			web_set_view();
+			do_cmd_redraw();
+			got = 1;
+		}
 	}
 
 	/* Safe autosave: only while waiting for a command */
@@ -378,14 +397,15 @@ static errr Term_pict_web(int x, int y, int n, const byte *ap, const char *cp,
  * message row, above the status row, right of the sidebar.  With tiles each
  * grid takes two text cells (big tiles), so the sidebar keeps normal text.
  */
-int web_view_hgt = SCREEN_HGT_STD, web_view_wid = SCREEN_WID_STD, web_map_step = 1;
+int web_view_hgt = SCREEN_HGT_STD, web_view_wid = SCREEN_WID_STD, web_map_step = 1, web_map_vstep = 1;
 
 static void web_set_view(void)
 {
 	term *t = &web_term[0];
 
-	web_map_step = (use_graphics != GRAPHICS_NONE) ? 2 : 1;
-	web_view_hgt = MIN(DUNGEON_HGT, t->hgt - ROW_MAP - 1);
+	web_map_vstep = (use_graphics != GRAPHICS_NONE) ? web_mult : 1;
+	web_map_step = 2 * web_map_vstep - (use_graphics == GRAPHICS_NONE);
+	web_view_hgt = MIN(DUNGEON_HGT, (t->hgt - ROW_MAP - 1) / web_map_vstep);
 	web_view_wid = MIN(DUNGEON_WID, (t->wid - COL_MAP) / web_map_step);
 
 	if (character_generated) verify_panel();
@@ -464,6 +484,8 @@ errr init_web(int argc, char **argv)
 	web_react();
 
 	/* Shockbolt tiles unless the page says text */
+	web_mult = js_tile_mult();
+	js_mult_applied(web_mult);
 	web_graphics(js_tiles_wanted());
 
 	for (i = 0; i < WEB_TERMS; i++)

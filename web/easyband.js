@@ -65,6 +65,7 @@
 	var FONT = '"DejaVu Sans Mono", Menlo, Consolas, "Liberation Mono", monospace';
 	var GUT = 6, TITLE_H = 20, BORDER = 2;
 	var MIN_W = 90, MIN_H = 64, MAIN_MIN_W = 240, MAIN_MIN_H = 160;
+	var MULT = 1;   /* map grid = 2*MULT x MULT cells in tile mode (the game's MAP_STEP/MAP_VSTEP) */
 	var TILE_STEPS = [16, 20, 24, 28, 32, 36, 40, 44, 48, 56, 64];
 	/* Tile mode has square cells (no big-tile mode in 2.9.3): own zoom steps */
 	var GTILE_STEPS = [8, 10, 12, 14, 16, 20, 24, 28, 32, 40, 48, 64];
@@ -116,6 +117,7 @@
 				});
 				if (TILE_STEPS.indexOf(s.tile) >= 0) d.tile = s.tile;
 				if (GTILE_STEPS.indexOf(s.gtile) >= 0) d.gtile = s.gtile;
+				if (s.mult >= 1 && s.mult <= 4) d.mult = s.mult;
 				d.autoSplit = s.autoSplit === true;
 				d.autoTile = s.autoTile === true;
 				if (d.autoSplit || d.autoTile) followWindow(d);
@@ -204,7 +206,7 @@
 		if (!i) {
 			/* Text cells are half as wide as high; with tiles a grid is two
 			   cells (the game's big tiles, MAP_STEP in defines.h) */
-			ch = tilesOn() ? L.gtile : L.tile; cw = ch / 2;
+			ch = tilesOn() ? Math.min(L.gtile, defaultLayout().gtile) : L.tile; cw = ch / 2;   /* tiles: cells fit 80x24, A+ zooms the grid */
 			font = Math.floor(Math.min(ch * 0.8, cw / 0.62));
 			/* text mode: cells from the map font, so wide fonts do not overlap */
 			if (!tilesOn()) { cw = Math.ceil(measure(font, 0)); ch = Math.round(font * 1.3); }
@@ -292,6 +294,16 @@
 
 	/* Zoom: main window tile size, sub window font size */
 	function zoomMain(dir) {
+		if (tilesOn()) {   /* tile mode: bigger grids, same 80x24 text cells */
+			var m = clamp((L.mult || 1) + dir, 1, 4);
+			if (m === (L.mult || 1)) return;
+			L.mult = m;
+			saveLayout();
+			app.status('Map tiles: ' + (m * terms[0].ch) + ' px');
+			clearTimeout(zoomMsgTimer);
+			zoomMsgTimer = setTimeout(function () { app.status(''); }, 1200);
+			return;
+		}
 		var g = tilesOn(), st = g ? GTILE_STEPS : TILE_STEPS, k = g ? 'gtile' : 'tile';
 		var i = st.indexOf(L[k]);
 		var n = clamp(i + dir, 0, st.length - 1);
@@ -307,7 +319,7 @@
 	var zoomMsgTimer = 0;
 
 	function resetLayout() {
-		L = Object.assign(defaultLayout(), { audio: L.audio, wm: wm.state(), face: L.face, mapFace: L.mapFace, text: L.text });
+		L = Object.assign(defaultLayout(), { audio: L.audio, wm: wm.state(), face: L.face, mapFace: L.mapFace, text: L.text, mult: 1 });
 		scheduleLayout();
 		saveLayout();
 	}
@@ -529,12 +541,12 @@
 				if (fx + TILE > sw || fy + TILE > sh) fx = fy = 0;
 				if (bx + TILE > sw || by + TILE > sh) bx = by = 0;
 
-				var tw = 2 * T.cw;	/* big tile: two cells */
+				var tw = 2 * MULT * T.cw, th = MULT * h;	/* big tile: 2m x m cells */
 				c.fillStyle = '#000';
-				c.fillRect(px, py, tw, h);
+				c.fillRect(px, py, tw, th);
 				if ((ta & 0x80) && (tk & 0x80) && (bx !== fx || by !== fy))
-					c.drawImage(tiles, bx, by, TILE, TILE, px, py, tw, h);
-				c.drawImage(tiles, fx, fy, TILE, TILE, px, py, tw, h);
+					c.drawImage(tiles, bx, by, TILE, TILE, px, py, tw, th);
+				c.drawImage(tiles, fx, fy, TILE, TILE, px, py, tw, th);
 			}
 		},
 
@@ -551,6 +563,8 @@
 
 		/* Tiles button: the game asks at start and at each command prompt */
 		tilesWanted: function () { return (tilesReady && !L.text) ? 1 : 0; },
+		tileMult: function () { return (L && L.mult) || 1; },
+		multApplied: function (m) { MULT = m; },
 		tilesSwitch: function () { var s = tilesSwitch; tilesSwitch = -1; return s; },
 
 		nextEvent: function (atCmd) {

@@ -872,7 +872,7 @@ extern int do_randart(u32b randart_seed);
 #endif /* GJW_RANDART */
 
 #ifdef USE_WEB
-extern int web_view_hgt, web_view_wid, web_map_step;
+extern int web_view_hgt, web_view_wid, web_map_step, web_map_vstep;
 
 /* main-web.c */
 extern void web_sync_files(void);
