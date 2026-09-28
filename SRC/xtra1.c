@@ -1076,7 +1076,7 @@ static void fix_player_1(void)
  */
 static void fix_message(void)
 {
-	int j, i, k;
+	int j, i, k, rows;
 	int w, h;
 	int x, y;
 
@@ -1097,12 +1097,24 @@ static void fix_message(void)
 		/* Get size */
 		Term_get_size(&w, &h);
 
+		/* Rows in use (folded messages, at most h): they fill the window from
+		   the top (web: no empty band above the first message) */
+		for (rows = 0, k = 0; rows < h && k < message_num(); rows++)
+		{
+			int n = 1;
+			while ((k + n < message_num()) && (message_str((s16b)k)[0] > ' ') &&
+			       streq(message_str((s16b)k), message_str((s16b)(k + n)))) n++;
+			k += n;
+		}
+
 		/* Dump messages, repeats folded to "message (xN)" */
 		for (i = 0, k = 0; i < h; i++)
 		{
 			byte color;
 			char buf[1024];
 			int n = 1;
+
+			if (i >= rows) { Term_erase(0, i, 255); continue; }
 
 			while ((k + n < message_num()) && (message_str((s16b)k)[0] > ' ') &&
 			       streq(message_str((s16b)k), message_str((s16b)(k + n)))) n++;
@@ -1113,7 +1125,7 @@ static void fix_message(void)
 			k += n;
 
 			/* Dump the message on the appropriate line */
-			Term_putstr(0, (h - 1) - i, -1, color, buf);
+			Term_putstr(0, (rows - 1) - i, -1, color, buf);
 
 			/* Cursor */
 			Term_locate(&x, &y);
