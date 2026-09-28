@@ -1574,7 +1574,7 @@ static void term_change_font(term_data *td)
 }
 
 
-extern void windows_map(void);
+static void windows_map(void);
 
 
 /*
