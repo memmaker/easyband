@@ -107,11 +107,13 @@
 # define SCREEN_WID	web_view_wid
 # define MAP_STEP	web_map_step
 # define MAP_VSTEP	web_map_vstep
+# define ROW_BOTTOM	web_row_bottom	/* the status line: the main term's last row */
 #else
 # define SCREEN_HGT	SCREEN_HGT_STD
 # define SCREEN_WID	SCREEN_WID_STD
 # define MAP_STEP	1
 # define MAP_VSTEP	1
+# define ROW_BOTTOM	(ROW_MAP + SCREEN_HGT)
 #endif
 
 /* Detection area: a fixed-size screen centred on the view */
@@ -486,31 +488,31 @@
 #define ROW_STUN		22
 #define COL_STUN		0	/* <stun> */
 
-#define ROW_HUNGRY		(ROW_MAP + SCREEN_HGT)
+#define ROW_HUNGRY		ROW_BOTTOM
 #define COL_HUNGRY		0	/* "Weak" / "Hungry" / "Full" / "Gorged" */
 
-#define ROW_BLIND		(ROW_MAP + SCREEN_HGT)
+#define ROW_BLIND		ROW_BOTTOM
 #define COL_BLIND		7	/* "Blind" */
 
-#define ROW_CONFUSED	(ROW_MAP + SCREEN_HGT)
+#define ROW_CONFUSED	ROW_BOTTOM
 #define COL_CONFUSED	13	/* "Confused" */
 
-#define ROW_AFRAID		(ROW_MAP + SCREEN_HGT)
+#define ROW_AFRAID		ROW_BOTTOM
 #define COL_AFRAID		22	/* "Afraid" */
 
-#define ROW_POISONED	(ROW_MAP + SCREEN_HGT)
+#define ROW_POISONED	ROW_BOTTOM
 #define COL_POISONED	29	/* "Poisoned" */
 
-#define ROW_STATE		(ROW_MAP + SCREEN_HGT)
+#define ROW_STATE		ROW_BOTTOM
 #define COL_STATE		38	/* <state> */
 
-#define ROW_SPEED		(ROW_MAP + SCREEN_HGT)
+#define ROW_SPEED		ROW_BOTTOM
 #define COL_SPEED		49	/* "Slow (-NN)" or "Fast (+NN)" */
 
-#define ROW_STUDY		(ROW_MAP + SCREEN_HGT)
+#define ROW_STUDY		ROW_BOTTOM
 #define COL_STUDY		64	/* "Study" */
 
-#define ROW_DEPTH		(ROW_MAP + SCREEN_HGT)
+#define ROW_DEPTH		ROW_BOTTOM
 #define COL_DEPTH		70	/* "Lev NNN" / "NNNN ft" */
 
 #define ROW_MAP			1

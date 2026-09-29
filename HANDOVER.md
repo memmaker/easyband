@@ -531,3 +531,23 @@ recorded in `web/toolchain.sh` is still valid.
   at birth; real keys (`computer key`) do, letters work either way. `^A n`
   with "Morgoth, Lord of Darkness" places nothing in town (unique); a
   non-unique works.
+
+## Text windows (RVIP W0 rule 6, copied from the Sangband pilot)
+- The map canvas is the only canvas and shows term 0's map area only
+  (`js_origin(COL_MAP, ROW_MAP, 1)`). Sub-terms have fixed sizes
+  (`web_cols[]`/`web_rows[]`, Inventory/Equipment 80 wide for the weights at
+  column 71) and go to `<pre class="txt">` as trimmed HTML rows
+  (`web_sub_fresh()`); the sidebar + status line are the Status window
+  (`web_status()`, pane 8).
+- Pop-up (pane 7, `#pop`): term 0 while `!character_generated ||
+  character_icky` (birth, screen_save, stores, death). Only the cells that
+  differ from `Term->mem` when every icky level is a screen_save
+  (`character_icky == screen_depth`; `screen_depth` is no longer static in
+  util.c); a store (icky without a save) is the whole screen.
+- The status line is always term 0's last row (`ROW_BOTTOM` =
+  `web_row_bottom` in defines.h); with map zoom (MAP_VSTEP > 1) it used to
+  land mid-map at `ROW_MAP + SCREEN_HGT`.
+- The 2.9.3 lists draw no tiles, so there are no list icons (the page
+  handles "\x07" icons anyway). No mouse in this variant.
+- Tests: `web/tests/lib.js` reads panes via `__pane(p)`, `term(t)` = pane
+  t, `status()` = pane 8, `screen()` lays the pop-up over term 0.

@@ -2451,7 +2451,7 @@ void message_format(u16b message_type, s16b extra, cptr fmt, ...)
 /*
  * Hack -- prevent "accidents" in "screen_save()" or "screen_load()"
  */
-static int screen_depth = 0;
+int screen_depth = 0;	/* (main-web.c: a pop-up over the map) */
 
 
 /*

@@ -42,6 +42,23 @@ async function open(opts = {}) {
 			};
 			qb.wipe = function (t, x, y, n) { put(x, y, ' '.repeat(n), t); return wipe.apply(this, arguments); };
 			qb.clear = function (t) { if (!t) window.__rows = []; else window.__terms[t] = []; return clear.apply(this, arguments); };
+			// Text panes (main-web.c line/rows): 1..6 sub-windows, 7 = the pop-up over term 0 (at popAt), 8 = Status
+			const P = window.__P = {}, at = window.__at = { x: -1, y: -1 };
+			const line = qb.line, rowsF = qb.rows, popAt = qb.popAt;
+			qb.line = function (p, y, l) { (P[p] = P[p] || [])[y] = l; return line.apply(this, arguments); };
+			qb.rows = function (p, n) { (P[p] = P[p] || []).length = n; return rowsF.apply(this, arguments); };
+			qb.popAt = function (x, y) { at.x = x; at.y = y; if (x < 0) P[7] = []; return popAt.apply(this, arguments); };
+		};
+		const plain = (l) => (l || '').replace(/\x05#[0-9a-f]{6}|[\x01\x06]/g, '').replace(/\x07[0-9a-f]{8}(\d)/g, (m, w) => '#'.padEnd(+w));
+		window.__pane = (p) => ((window.__P || {})[p] || []).map(plain);
+		// Term 0 as the player sees it: the pop-up's rows laid over the canvas text
+		window.__screen = () => {
+			const rows = window.__rows.map(r => r || ''), at = window.__at;
+			if (at && at.x >= 0) window.__pane(7).forEach((l, i) => {
+				const y = at.y + i, r = (rows[y] || '').padEnd(at.x + l.length);
+				rows[y] = r.slice(0, at.x) + l + r.slice(at.x + l.length);
+			});
+			return rows;
 		};
 		const iv = setInterval(() => { hook(); if (window.Module && window.Module.qb && window.Module.qb.__hooked) clearInterval(iv); }, 5);
 	});
@@ -50,12 +67,17 @@ async function open(opts = {}) {
 }
 
 async function screen(page) {
-	return (await page.evaluate(() => window.__rows.map(r => (r || '').replace(/\s+$/, '')))).join('\n');
+	return (await page.evaluate(() => window.__screen().map(r => r.replace(/\s+$/, '')))).join('\n');
 }
 
 /* Text of sub-window t (1 Inventory, 2 Messages, 3 Monsters, ...) */
 async function term(page, t) {
-	return (await page.evaluate(t => (window.__terms[t] || []).map(r => (r || '').replace(/\s+$/, '')), t)).join('\n');
+	return (await page.evaluate(t => window.__pane(t), t)).join('\n');
+}
+
+/* The Status window (sidebar rows, then the status-line groups) */
+async function status(page) {
+	return (await page.evaluate(() => window.__pane(8))).join('\n');
 }
 
 /* Last non-empty line of the Messages window */
@@ -126,4 +148,4 @@ async function birth(page, name = 'Tester') {
 	throw new Error('birth did not finish\n' + await screen(page));
 }
 
-module.exports = { open, screen, term, lastMsg, fight, waitText, key, keys, shot, birth, URL };
+module.exports = { open, screen, term, status, lastMsg, fight, waitText, key, keys, shot, birth, URL };
