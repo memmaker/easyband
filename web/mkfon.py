@@ -2,7 +2,7 @@
 
 Each set pixel becomes a square of U units, UPM = height * U, so the font is
 crisp at font-size = n * height px. Needs fontTools (pip install fonttools).
-Usage: python3 web/mkfon.py lib/xtra/font/*.fon  -> web/fonts/Easyband_<name>.woff
+Usage: python3 web/mkfon.py lib/xtra/font/*.fon  -> web/fonts/Easyband_<name>.woff (then move them to roguelikes-index/fonts/, the shared list is in rvip-wm.js)
 """
 import os, struct, sys
 from fontTools.fontBuilder import FontBuilder

@@ -34,11 +34,6 @@ cp web/index.html web/easyband.js "$OUT/"
 # = ~/Games/tactical-angband/web/tiles.webp); mapping lib/user/graf-shb.prf
 # (python3 web/mkgraf-shb.py), drawn nearest-neighbour at cell size
 cp web/tiles.webp "$OUT/"
-# The game's own bitmap fonts (lib/xtra/font/*.fon, python3 web/mkfon.py) for the Map font select
-cp -R web/fonts "$OUT/"
-# Font choosers: the index page's fonts/*.woff (loaded from ../fonts/)
-FONTS="${FONTS:-$HOME/Games/roguelikes-index/fonts}"
-(ls "$FONTS" 2>/dev/null | sed -n 's/\.woff$//p') | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().split()))' > "$OUT/fonts.json"
 # Help: the game guide (Docs entry easyband.html when present, else web/make-help.py's own)
 python3 web/make-help.py > "$OUT/help.html"
 # Town music (loops at depth 0, off by default)

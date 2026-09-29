@@ -508,9 +508,6 @@
 	mapSel.className = 'map-font';
 	mapSel.title = 'Map font (text mode)';
 	mapSel.innerHTML = '<option value="">Default font</option>';
-	/* the game's lib/xtra/font/*.fon as pixel-exact web fonts (dist/fonts, web/mkfon.py) */
-	['5x8', '6x9', '6x10', '6x12', '6x13', '6x13b', '7x13', '7x13b', '8x13', '8x13b', '9x15', '9x15b', '10x20', '12x24']
-		.forEach(function (n) { mapSel.add(new Option('Easyband original: ' + n, 'Easyband_' + n)); });
 	mapSel.addEventListener('pointerdown', function (e) { e.stopPropagation(); });   /* not a window drag */
 	mapSel.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 	function renderMapSel() {
@@ -523,7 +520,7 @@
 	function loadFace(n, now) {
 		var redraw = function () { applyFace(); if (terms.length) scheduleLayout(); };
 		if (!n) { if (now) redraw(); return; }
-		var ff = new FontFace(n, 'url(' + (/^Easyband_/.test(n) ? '' : '../') + 'fonts/' + n + '.woff)');
+		var ff = new FontFace(n, 'url(../fonts/' + n + '.woff)');
 		ff.load().then(function () { document.fonts.add(ff); redraw(); })
 			.catch(function () { app.status('Could not load the font ' + n + '.', true); });
 	}
@@ -882,13 +879,9 @@
 		RvipWM.dropdown($('btn-audio'), $('menu-audio'));
 		RvipWM.dropdown($('btn-file'), $('menu-file'));
 		$('btn-tiles').onclick = toggleTiles;
-		fetch('fonts.json').then(function (r) { return r.json(); }).then(function (list) {
+		RvipWM.fonts.then(function (list) {
 			[[$('sel-font'), 'face'], [mapSel, 'mapFace']].forEach(function (a) {
-				list.forEach(function (n) {
-					var o = document.createElement('option');
-					o.value = n; o.textContent = n.replace(/^Web(Plus|437)_/, '').replace(/_/g, ' ');
-					a[0].appendChild(o);
-				});
+				RvipWM.fontOptions(a[0]);
 				a[0].value = (L && L[a[1]]) || '';
 			});
 		}).catch(function () { });
