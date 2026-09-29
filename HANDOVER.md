@@ -551,3 +551,30 @@ recorded in `web/toolchain.sh` is still valid.
   handles "\x07" icons anyway). No mouse in this variant.
 - Tests: `web/tests/lib.js` reads panes via `__pane(p)`, `term(t)` = pane
   t, `status()` = pane 8, `screen()` lays the pop-up over term 0.
+
+## Original fonts (2026-09-29, Mac)
+- **`lib/user/font-{ami,dos,ibm,mac,win,x11}.prf` restored.** `unar` on the
+  other archive (`~/Downloads/Easyband (v2.3)[var][src].7z`) only yields the
+  same solid `easyband23_src.rar`, and those six entries fail again. Taken
+  from **Angband v2.9.3** (github.com/angband/angband, tag `v2.9.3`,
+  `lib/pref/font-*.prf`; v2.9.2 identical): byte sizes match the RAR listing
+  exactly (561/238/749/421/947/438) and `font-xxx.prf` is identical to ours.
+  Effect: the web build is `$SYS x11`, so `font-x11.prf` now loads its 16
+  `V:` lines = the X11 port's palette (e.g. green `00C000`, blue `0000FE`,
+  orange `FF9200`) instead of the `variable.c` default. It has no `F:`/`K:`
+  remaps (the DEC glyph 1/2 path in main-web.c/`glyph()` stays unused).
+- **Map fonts "Easyband original: WxH"** (Map title bar select, text mode):
+  `lib/xtra/font/*.fon` (14 NE bitmap fonts, 5x8 … 12x24, 32–127 + DEC 1/2)
+  → `web/fonts/Easyband_<name>.woff` by `web/mkfon.py` (fontTools in a
+  venv; one square per pixel, UPM = height × 64). Shipped in the game's own
+  `dist/fonts/` (not the shared `../fonts/`); `loadFace()` picks the path by
+  the `Easyband_` prefix. `termShape()` snaps cell = n × W×H, font = n × H
+  (n from the zoom), the text `+1` offset is off and the canvas gets
+  `-webkit-font-smoothing: none` (macOS emboldens outlines → grey fringes).
+  Checked in the browser pane: all 14 draw only palette colours (no AA),
+  choice survives a reload, tiles mode hides the select and is unchanged.
+  12x24 at 80 columns is wider than a small Map window → scaled down there.
+- **Provenance/licence:** the .fon files say "MicroX font", "Public domain
+  font. Share and enjoy." — the X11 misc-fixed fonts (public domain),
+  packed for Angband's Windows port (`font-win.prf` uses their 31/127
+  glyphs). Credited in the Help guide's Credits.

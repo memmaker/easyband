@@ -113,6 +113,9 @@ Charles Swiger. Based on Moria (© 1985 Robert Alan Koeneke) and Umoria (© 1989
 Wilson). Licence: the Angband/Moria notice in the source files (free, not-for-profit
 copying).</li>
 <li><strong>Tiles</strong>: Shockbolt tileset © 2012 Raymond Gaustadnes (from Angband 4.2).</li>
+<li><strong>Map fonts "Easyband original"</strong>: the game's own <code>lib/xtra/font/*.fon</code>, the X11
+misc-fixed fonts (public domain; "MicroX font", "Public domain font. Share and enjoy.") as bitmap
+fonts for Angband's Windows port, converted pixel for pixel to web fonts.</li>
 <li><strong>Sound</strong>: Easyband's own samples; the gaps from the Dubtrain Angband Sound Pack
 v3.1.0.</li>
 <li>Web port, auto-explore, command menu and item menus: memmaker (RVIP).</li>
@@ -151,6 +154,7 @@ WEB = '''<ul>
 <li><strong>Zoom:</strong> <em>A−</em> / <em>A+</em> on the Map title bar (shown on hover) change the size of the map. Hover over a small window's title to show its <em>A−</em> / <em>A+</em> buttons, which change its text size.</li>
 <li><strong>Rename a window</strong> by clicking its title, typing a new name and pressing <kbd>Enter</kbd> (<kbd>Esc</kbd> cancels, an empty name restores the default).</li>
 <li><strong>Keys:</strong> arrow keys, the numeric keypad or <kbd>1</kbd>–<kbd>9</kbd> move you; <kbd>Shift</kbd> + direction runs. Easyband has no mouse support.</li>
+<li><strong>Map font</strong> (text mode, on the Map title bar): <em>Easyband original</em> are the game's own bitmap fonts, drawn pixel-exact at whole multiples of their size (<em>A−</em> / <em>A+</em>).</li>
 <li><strong>Tiles</strong> switches between Shockbolt tiles and text (at the next command). <strong>Sound</strong> and <strong>Music</strong> are off by default; Music plays a town tune while you are in town.</li>
 <li>Browsers keep a few shortcuts for themselves (<kbd>Ctrl+W</kbd>, <kbd>Ctrl+T</kbd>, <kbd>Ctrl+N</kbd>, and <kbd>Cmd</kbd> shortcuts on a Mac), so those never reach the game: Easyband's time command <kbd>Ctrl+T</kbd> is in the <kbd>Enter</kbd> menu.</li>
 <li>If the game ever crashes, a message appears at the top; reload the page to continue from your last save.</li>

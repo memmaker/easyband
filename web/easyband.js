@@ -225,12 +225,15 @@
 			font = Math.floor(Math.min(ch * 0.8, cw / 0.62));
 			/* text mode: cells from the map font, so wide fonts do not overlap */
 			if (!tilesOn()) { cw = Math.ceil(measure(font)); ch = Math.round(font * 1.3); }
+			/* the game's own bitmap fonts (web/mkfon.py): whole multiples of the pixel cell only */
+			var px = !tilesOn() && /^Easyband_(\d+)x(\d+)/.exec(L.mapFace || '');
+			if (px) { var n = Math.max(1, Math.round(font / px[2])); font = px[2] * n; cw = px[1] * n; ch = font; }
 			/* The game fits its map view to the term (web_set_view()); 80x24 at least;
 			   the canvas shows the map area only (O: sidebar columns, message row, status row) */
 			cols = clamp(Math.floor(box.w / cw) + O.x, 80, 255);
 			rows = clamp(Math.floor(box.h / ch) + O.y + O.b, 24, 255);
 		}
-		return { cols: cols, rows: rows, cw: cw, ch: ch, font: font, face: face(i) };
+		return { cols: cols, rows: rows, cw: cw, ch: ch, font: font, face: face(i), pix: !!px };
 	}
 
 	/*
@@ -251,6 +254,8 @@
 		cv.width = (cols - O.x) * l.cw * dpr;
 		cv.height = (rows - O.y - O.b) * l.ch * dpr;
 		var ctx = cv.getContext('2d', { alpha: false });
+		/* bitmap fonts: macOS would embolden the pixel squares (grey fringes) */
+		cv.style.webkitFontSmoothing = l.pix ? 'none' : '';
 		/* term cells at their place, shifted so the map area starts at 0, 0 (the rest falls outside) */
 		ctx.setTransform(dpr, 0, 0, dpr, -O.x * l.cw * dpr, -O.y * l.ch * dpr);
 		ctx.imageSmoothingEnabled = false;
@@ -260,7 +265,7 @@
 		ctx.fillStyle = '#000';
 		ctx.fillRect(0, 0, cols * l.cw, rows * l.ch);
 		terms[i] = { cv: cv, ctx: ctx, cols: cols, rows: rows,
-			cw: l.cw, ch: l.ch, font: l.font, face: l.face, dpr: dpr };
+			cw: l.cw, ch: l.ch, font: l.font, face: l.face, pix: l.pix, dpr: dpr };
 		fitCanvas(i);
 	}
 
@@ -503,6 +508,9 @@
 	mapSel.className = 'map-font';
 	mapSel.title = 'Map font (text mode)';
 	mapSel.innerHTML = '<option value="">Default font</option>';
+	/* the game's lib/xtra/font/*.fon as pixel-exact web fonts (dist/fonts, web/mkfon.py) */
+	['5x8', '6x9', '6x10', '6x12', '6x13', '6x13b', '7x13', '7x13b', '8x13', '8x13b', '9x15', '9x15b', '10x20', '12x24']
+		.forEach(function (n) { mapSel.add(new Option('Easyband original: ' + n, 'Easyband_' + n)); });
 	mapSel.addEventListener('pointerdown', function (e) { e.stopPropagation(); });   /* not a window drag */
 	mapSel.addEventListener('mousedown', function (e) { e.stopPropagation(); });
 	function renderMapSel() {
@@ -515,7 +523,7 @@
 	function loadFace(n, now) {
 		var redraw = function () { applyFace(); if (terms.length) scheduleLayout(); };
 		if (!n) { if (now) redraw(); return; }
-		var ff = new FontFace(n, 'url(../fonts/' + n + '.woff)');
+		var ff = new FontFace(n, 'url(' + (/^Easyband_/.test(n) ? '' : '../') + 'fonts/' + n + '.woff)');
 		ff.load().then(function () { document.fonts.add(ff); redraw(); })
 			.catch(function () { app.status('Could not load the font ' + n + '.', true); });
 	}
@@ -578,7 +586,7 @@
 			c.fillStyle = '#000';
 			c.fillRect(x * T.cw, y * T.ch, n * st * T.cw, T.ch);
 			c.fillStyle = color(a);
-			var cy = y * T.ch + T.ch / 2 + 1;
+			var cy = y * T.ch + T.ch / 2 + (T.pix ? 0 : 1);
 			for (var i = 0; i < n; i++) {
 				var ch = H[s + i];
 				if (ch !== 32) c.fillText(glyph(ch), (x + i * st) * T.cw + st * T.cw / 2, cy);
